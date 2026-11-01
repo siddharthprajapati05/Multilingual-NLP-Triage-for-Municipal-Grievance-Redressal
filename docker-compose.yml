@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # ─── PostgreSQL Database ─────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: mgrs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mgrs_user
+      POSTGRES_PASSWORD: mgrs_password
+      POSTGRES_DB: mgrs_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mgrs_user -d mgrs_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend API ─────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mgrs-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://mgrs_user:mgrs_password@postgres:5432/mgrs_db
+      JWT_SECRET: change_this_to_a_long_random_secret_in_production
+      JWT_EXPIRES_IN: 7d
+      ADMIN_ID: admin@mgrs.gov
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+      PORT: 5000
+      NODE_ENV: production
+      FRONTEND_URL: http://localhost:3000
+      AI_SERVICE_URL: http://ai-service:8000
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads:/app/uploads
+
+  # ─── Frontend ────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mgrs-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+  # ─── AI Service (Placeholder) ────────────────────────────────────────────────
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: mgrs-ai-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pgdata:
+  uploads:

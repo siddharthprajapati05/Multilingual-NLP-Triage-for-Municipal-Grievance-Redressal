@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate, Outlet } from 'react-router-dom';
+import { NavLink, useNavigate, Outlet, Link } from 'react-router-dom';
 import {
   LayoutDashboard, FilePlus, Search, History, Bell, User,
   LogOut, Menu, X, HelpCircle, Building2
@@ -45,9 +45,9 @@ const CitizenLayout: React.FC = () => {
     <div className="min-h-screen bg-warm-50 flex">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-warm-200 shadow-card fixed h-full z-20">
-        <div className="p-5 border-b border-warm-200">
+        <Link to="/dashboard" className="block p-5 border-b border-warm-200 hover:bg-warm-100/60 transition-colors group cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-700 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary-700 group-hover:bg-primary-800 transition-colors flex items-center justify-center">
               <Building2 size={20} className="text-white" />
             </div>
             <div>
@@ -56,7 +56,7 @@ const CitizenLayout: React.FC = () => {
             </div>
           </div>
           <p className="text-[10px] text-gray-400 mt-1 ml-13">AI-Powered · Multilingual · Citizen Centric</p>
-        </div>
+        </Link>
 
         <div className="flex-1 p-4 overflow-y-auto">
           <NavContent />
@@ -81,12 +81,12 @@ const CitizenLayout: React.FC = () => {
 
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-warm-200 px-4 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary-700 flex items-center justify-center">
             <Building2 size={16} className="text-white" />
           </div>
           <span className="text-sm font-bold text-gray-900">Municipal Grievance</span>
-        </div>
+        </Link>
         <button onClick={() => setMobileOpen(!mobileOpen)} className="btn-ghost p-2">
           {mobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -98,7 +98,7 @@ const CitizenLayout: React.FC = () => {
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-modal p-4">
             <div className="flex items-center justify-between mb-6 pt-2">
-              <div className="flex items-center gap-2">
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-primary-700 flex items-center justify-center">
                   <Building2 size={18} className="text-white" />
                 </div>
@@ -106,7 +106,7 @@ const CitizenLayout: React.FC = () => {
                   <p className="text-sm font-bold text-gray-900">Municipal Grievance</p>
                   <p className="text-xs text-primary-600">Portal</p>
                 </div>
-              </div>
+              </Link>
               <button onClick={() => setMobileOpen(false)}>
                 <X size={20} className="text-gray-400" />
               </button>

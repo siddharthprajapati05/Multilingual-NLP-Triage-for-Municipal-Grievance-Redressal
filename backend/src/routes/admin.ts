@@ -246,7 +246,7 @@ const SLA_LOOKUP: Record<string, number> = {
 };
 
 router.patch('/complaints/:id/ai-correction', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { category, departmentId, urgency, estimatedDays, reason } = req.body;
+  const { category, departmentId, urgency, estimatedDays, reason, translatedText } = req.body;
   try {
     const existing = await prisma.complaint.findUnique({ where: { id: req.params.id } });
     if (!existing) {
@@ -287,6 +287,7 @@ router.patch('/complaints/:id/ai-correction', async (req: AuthenticatedRequest, 
         departmentId: finalDepartmentId || undefined,
         urgency: finalUrgency,
         estimatedDays: newEstimatedDays,
+        translatedText: translatedText !== undefined ? (translatedText || null) : undefined,
       },
       include: {
         department: { select: { id: true, name: true, code: true } },

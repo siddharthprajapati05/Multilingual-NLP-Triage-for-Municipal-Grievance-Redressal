@@ -83,7 +83,14 @@ export const updateComplaintStatus = async (
 
 export const correctAIPrediction = async (
   id: string,
-  data: { category?: string; departmentId?: string; urgency?: string; estimatedDays?: number; reason?: string }
+  data: {
+    category?: string;
+    departmentId?: string;
+    urgency?: string;
+    estimatedDays?: number;
+    reason?: string;
+    translatedText?: string;
+  }
 ) => {
   const res = await api.patch(`/admin/complaints/${id}/ai-correction`, data, { headers: adminHeader() });
   return res.data;

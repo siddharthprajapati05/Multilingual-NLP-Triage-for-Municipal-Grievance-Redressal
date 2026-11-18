@@ -105,6 +105,7 @@ const AdminComplaintDetailPage: React.FC = () => {
     urgency: 'MEDIUM',
     estimatedDays: '' as number | string,
     reason: '',
+    translatedText: '',
   });
   const [correctionLoading, setCorrectionLoading] = useState(false);
 
@@ -119,6 +120,7 @@ const AdminComplaintDetailPage: React.FC = () => {
       urgency: urg,
       estimatedDays: defaultDays,
       reason: '',
+      translatedText: complaint.translatedText || '',
     });
     setShowCorrection(true);
   };
@@ -134,8 +136,9 @@ const AdminComplaintDetailPage: React.FC = () => {
         urgency: correctionForm.urgency,
         estimatedDays: parsedDays && !isNaN(parsedDays) ? parsedDays : undefined,
         reason: correctionForm.reason,
+        translatedText: correctionForm.translatedText,
       });
-      setSuccess('Category, Urgency & Resolution Days updated manually! SLA recalculated.');
+      setSuccess('Category, Urgency, SLA & Translation updated successfully!');
       setShowCorrection(false);
       fetchData();
     } catch {
@@ -493,10 +496,10 @@ const AdminComplaintDetailPage: React.FC = () => {
       </Modal>
 
       {/* Manual AI Prediction Override Modal */}
-      <Modal isOpen={showCorrection} onClose={() => setShowCorrection(false)} title="Manual Override: Category, Urgency & Resolution SLA">
+      <Modal isOpen={showCorrection} onClose={() => setShowCorrection(false)} title="Manual Override: Category, Urgency, SLA & Translation">
         <div className="space-y-4">
           <p className="text-xs text-gray-500">
-            Override category, urgency, department, or resolution days if the AI misclassified or if immediate priority intervention is needed.
+            Override category, urgency, department, SLA resolution days, or edit the English translation if the AI misclassified or translated inaccurately.
           </p>
           <div>
             <label className="form-label">Category *</label>
@@ -553,6 +556,18 @@ const AdminComplaintDetailPage: React.FC = () => {
             <p className="text-[11px] text-gray-400 mt-1">
               Specify how many days this complaint should be resolved within (e.g. 1–3 days for critical emergencies).
             </p>
+          </div>
+          <div>
+            <label className="form-label flex items-center justify-between">
+              <span>English Translation</span>
+              <span className="text-[11px] font-normal text-gray-500">Edit if AI translation is inaccurate</span>
+            </label>
+            <textarea
+              className="form-input h-20 resize-none"
+              placeholder="e.g. Water has not been coming to our place for 3 days."
+              value={correctionForm.translatedText}
+              onChange={e => setCorrectionForm({ ...correctionForm, translatedText: e.target.value })}
+            />
           </div>
           <div>
             <label className="form-label">Department (optional)</label>

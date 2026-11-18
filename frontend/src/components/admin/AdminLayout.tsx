@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate, Outlet } from 'react-router-dom';
+import { NavLink, useNavigate, Outlet, Link } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, ClipboardList, Building2, Users,
   BarChart3, LogOut, Menu, X, Bell, ChevronDown, FileBarChart
@@ -47,9 +47,9 @@ const AdminLayout: React.FC = () => {
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-primary-800 fixed h-full z-20">
         {/* Logo */}
-        <div className="p-5 border-b border-primary-700">
+        <Link to="/admin/dashboard" className="block p-5 border-b border-primary-700 hover:bg-primary-700/40 transition-colors group cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary-600 group-hover:bg-primary-500 transition-colors flex items-center justify-center">
               <Building2 size={20} className="text-white" />
             </div>
             <div>
@@ -62,7 +62,7 @@ const AdminLayout: React.FC = () => {
               Admin Portal
             </span>
           </div>
-        </div>
+        </Link>
 
         {/* Navigation */}
         <div className="flex-1 p-4 overflow-y-auto">
@@ -126,10 +126,10 @@ const AdminLayout: React.FC = () => {
             <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
             <aside className="absolute left-0 top-0 bottom-0 w-72 bg-primary-800 shadow-modal p-4 admin-sidebar">
               <div className="flex items-center justify-between mb-6 pt-2 text-white">
-                <div className="flex items-center gap-2">
+                <Link to="/admin/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <Building2 size={20} />
                   <span className="font-bold text-sm">Admin Portal</span>
-                </div>
+                </Link>
                 <button onClick={() => setMobileOpen(false)}><X size={20} /></button>
               </div>
               <style>{`

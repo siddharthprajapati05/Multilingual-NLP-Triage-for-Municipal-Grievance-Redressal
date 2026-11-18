@@ -83,6 +83,55 @@ def rule_urgency(*texts):
     return "HIGH" if any(k in blob for k in HIGH_KEYWORDS) else None
 
 
+CATEGORY_KEYWORDS = {
+    "Water Supply": [
+        "drinking water", "water supply", "pipeline", "pipe leak", "water crisis",
+        "panni", "pani", "paani", "nal", "toti", "jal", "tanker",
+        "पानी", "जल", "नल", "पाइप", "टैंकर", "জল", "পানীয় জল"
+    ],
+    "Sanitation": [
+        "garbage", "trash", "waste", "dustbin", "sewage overflow", "bad smell",
+        "kachra", "gandagi", "safai", "badboo", "कचरा", "सफाई", "गंदगी", "আবর্জনা", "ময়লা"
+    ],
+    "Street Lighting": [
+        "street light", "streetlight", "light pole", "streetlamp", "darkness",
+        "batti", "andhera", "लाइट", "बत्ती", "अंधेरा", "আলো", "বাতি"
+    ],
+    "Roads & Maintenance": [
+        "pothole", "potholes", "footpath", "divider", "pavement", "deep pothole",
+        "sadak", "gaddha", "gaddhe", "rasta", "सड़क", "गड्ढा", "রাস্তা", "গর্ত"
+    ],
+    "Electrical": [
+        "transformer", "electric shock", "short circuit", "live wire", "exposed wire",
+        "bijli", "current", "taar", "power cut", "बिजली", "करंट", "বিদ্যুৎ"
+    ],
+}
+
+
+def rule_category(*texts):
+    blob = " ".join(t for t in texts if t).lower()
+    for cat, kws in CATEGORY_KEYWORDS.items():
+        for kw in kws:
+            if f" {kw} " in f" {blob} ":
+                return cat
+    return None
+
+
+COMMON_HINGLISH_WORDS = {
+    "humare", "hamare", "yha", "yahan", "wahan", "pe", "din", "se", "panni", "pani",
+    "paani", "nhi", "nahi", "nahin", "ara", "aa", "raha", "rahi", "rahe", "hai",
+    "hain", "karo", "kripya", "jaldi", "bijli", "sadak", "kachra", "ganda", "saaf",
+    "batti", "kharab", "gaddha", "gaddhe", "gully", "nal", "nalo", "tota", "paip",
+    "bahut", "bohot", "kuch", "shikayat", "kijiye", "bhi", "tha", "thi", "the", "par"
+}
+
+
+def is_hinglish(text):
+    words = [w.strip(".,!?:;'\"()[]{}").lower() for w in text.split()]
+    match_count = sum(1 for w in words if w in COMMON_HINGLISH_WORDS)
+    return match_count >= 2 or (len(words) <= 5 and match_count >= 1)
+
+
 # ---------------------------------------------------------------- language detection
 _SCRIPTS = [("bn", 0x0980, 0x09FF), ("pa", 0x0A00, 0x0A7F), ("gu", 0x0A80, 0x0AFF),
             ("ta", 0x0B80, 0x0BFF), ("te", 0x0C00, 0x0C7F), ("kn", 0x0C80, 0x0CFF),
@@ -101,7 +150,9 @@ def detect_language(text, hint=None):
     latin = sum(1 for ch in text if ch.isascii() and ch.isalpha())
     indic = sum(counts.values())
     if indic == 0 or latin > indic * 3:
-        return hint if hint in ("en", "hin") else "en"
+        if hint and hint != "en":
+            return hint
+        return "en"
     script = max(counts, key=counts.get)
     if script != "dev":
         return script
@@ -194,30 +245,49 @@ class MGRSPredictor:
     def translate_to_english(self, text, lang):
         if not text or not text.strip():
             return text
-        import urllib.request, urllib.parse, json
+        import urllib.request, urllib.parse, json, re
+
+        query_text = text
+        # If text is Hinglish / Romanized Hindi, disambiguate colloquial terms
+        if is_hinglish(text) or any(w in text.lower() for w in ["panni", "pani", "paani", "nhi", "ara", "yha"]):
+            query_text = re.sub(r'\bpanni\b', 'paani (tap water supply)', query_text, flags=re.IGNORECASE)
+            query_text = re.sub(r'\byha\b', 'yahan', query_text, flags=re.IGNORECASE)
+            query_text = re.sub(r'\bnhi\b', 'nahi', query_text, flags=re.IGNORECASE)
+            query_text = re.sub(r'\bara\b', 'aa raha', query_text, flags=re.IGNORECASE)
+
+        def post_process_translation(res_str):
+            if not res_str:
+                return res_str
+            cleaned = res_str.strip()
+            # Municipal safeguard: "pani/panni" in municipal complaints means water supply, not weather rain
+            if any(w in text.lower() for w in ["panni", "pani", "paani", "nal"]) and "rain" in cleaned.lower():
+                cleaned = re.sub(r'\bhad any rain\b', 'had water supply', cleaned, flags=re.IGNORECASE)
+                cleaned = re.sub(r'\bany rain\b', 'water supply', cleaned, flags=re.IGNORECASE)
+                cleaned = re.sub(r'\brain\b', 'water supply', cleaned, flags=re.IGNORECASE)
+            return cleaned
 
         sl = lang if lang and lang != 'hin' else 'auto'
         # 1. Primary Engine: Google client=dict-chrome-ex (fast & does not hit gtx 429)
         try:
-            url = f"https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl={sl}&tl=en&dt=t&q=" + urllib.parse.quote(text)
+            url = f"https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl={sl}&tl=en&dt=t&q=" + urllib.parse.quote(query_text)
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
             with urllib.request.urlopen(req, timeout=3.5) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
                 res = ''.join([x[0] for x in data[0] if x and x[0]])
                 if res and res.strip():
-                    return res.strip()
+                    return post_process_translation(res)
         except Exception:
             pass
 
         # 2. Secondary Engine: MyMemory Public API fallback
         try:
-            url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(text)}&langpair={sl}|en"
+            url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(query_text)}&langpair={sl}|en"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=3.5) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
                 res = data.get('responseData', {}).get('translatedText')
                 if res and res.strip() and not res.startswith('MYMEMORY WARNING'):
-                    return res.strip()
+                    return post_process_translation(res)
         except Exception:
             pass
 
@@ -225,8 +295,9 @@ class MGRSPredictor:
         if self.translate_enabled and lang in NLLB_CODES:
             try:
                 self._load_translator()
-                return nllb_translate([text], NLLB_CODES[lang], "eng_Latn", self._t_tok, self._t_model,
-                                      self.device, batch_size=1)[0]
+                raw_res = nllb_translate([query_text], NLLB_CODES[lang], "eng_Latn", self._t_tok, self._t_model,
+                                         self.device, batch_size=1)[0]
+                return post_process_translation(raw_res)
             except Exception as exc:
                 print("translation failed:", repr(exc)[:200])
         return None
@@ -242,13 +313,29 @@ class MGRSPredictor:
     def predict(self, text, language=None):
         text = (text or "").strip()
         lang = detect_language(text, language)
-        if lang in ("en", "hin"):
-            translated = text  # already Latin script (romanised Hindi is not translated)
+
+        # Detect Hinglish (Hindi words in English alphabet) even if submitted as 'en'
+        if (lang == "en" or not language or language == "en") and is_hinglish(text):
+            lang = "hi"
+
+        if lang == "en":
+            translated = text
         else:
-            translated = self.translate_to_english(text, lang)
-        category, conf, urgency, _ = self.classify(text)
+            translated = self.translate_to_english(text, lang) or text
+
+        # If we successfully translated Hinglish / regional text to English,
+        # classify the clean English text so IndicBERTv2 sees standard vocabulary
+        classify_text = translated if (translated and translated != text) else text
+        category, conf, urgency, _ = self.classify(classify_text)
+
+        # Apply category keyword safety check (e.g. prevents "panni/water" from becoming Street Lighting)
+        safety_cat = rule_category(text, translated)
+        if safety_cat:
+            category = safety_cat
+
         if rule_urgency(text, translated):
             urgency = "HIGH"
+
         return {
             "category": category,
             "department": DEPARTMENT[category],

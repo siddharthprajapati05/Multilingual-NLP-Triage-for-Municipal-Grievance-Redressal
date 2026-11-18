@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, User, MapPin, Calendar, Globe, Sparkles, Send, Building2, Clock } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Calendar, Globe, Sparkles, Send, Building2, Clock, Edit3 } from 'lucide-react';
 import {
   getAdminComplaintById, assignComplaint, updateComplaintStatus, correctAIPrediction
 } from '../../services/complaints';
@@ -8,6 +8,17 @@ import api from '../../services/api';
 import { Complaint, Department } from '../../types';
 import { StatusBadge, UrgencyBadge, Spinner, Alert, Modal } from '../../components/ui';
 import { formatDateTime, getLanguageName } from '../../utils/helpers';
+
+const CATEGORIES = [
+  'Sanitation',
+  'Water Supply',
+  'Street Lighting',
+  'Roads & Maintenance',
+  'Parks & Recreation',
+  'Electrical',
+  'Health',
+  'General',
+];
 
 const getTargetResolution = (createdAtStr: string, estimatedDays?: number, resolvedAt?: string) => {
   if (resolvedAt) {

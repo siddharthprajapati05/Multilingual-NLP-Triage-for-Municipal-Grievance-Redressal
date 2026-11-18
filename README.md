@@ -278,6 +278,24 @@ When a citizen clicks **Submit**:
 
 ---
 
+## 🛠️ Admin Manual Override & SLA Recalculation
+
+If the AI misclassifies a complaint, assigns an unsuitable urgency (e.g. classifying an accident-causing pothole or drinking water shutdown as Medium instead of High), or if priority intervention is needed, administrators have complete control:
+1. Open any complaint in the **Admin Portal** (`/admin/complaints/:id`).
+2. Click **`Manual Override (Category / Urgency / SLA)`** or **`Correct / Override`**.
+3. In the modal, update:
+   - **Category**: Pick any of the 8 municipal categories.
+   - **Urgency**: Switch between `LOW`, `MEDIUM`, or `HIGH`.
+   - **Estimated Resolution Days**: Enter custom days (e.g., `1–2 days`) or let the system apply standard SLA.
+   - **Department**: Select manually or let it auto-assign based on the new category.
+   - **Reason for Override**: Provide an audit note explaining the manual adjustment.
+4. **Immediate Synchronization**:
+   - The SLA deadline date is automatically recalculated.
+   - An audit entry is appended to the complaint's **Status History**.
+   - Both the Admin portal and Citizen tracking portal reflect the updated category, urgency, department, and deadline immediately.
+
+---
+
 ## 📊 Department & Category Mapping
 
 | Category | Department Name | Department Code | Typical SLA (High / Med / Low) |

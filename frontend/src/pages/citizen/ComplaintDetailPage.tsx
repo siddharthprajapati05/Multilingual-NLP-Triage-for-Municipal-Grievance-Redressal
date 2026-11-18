@@ -72,14 +72,14 @@ const ComplaintDetailPage: React.FC = () => {
   if (!complaint) return <Alert type="error" message="Complaint not found." />;
 
   return (
-    <div className="animate-fade-in max-w-3xl mx-auto">
-      <Link to="/history" className="inline-flex items-center gap-1 text-sm text-primary-700 hover:underline mb-4">
-        <ArrowLeft size={14} /> ← Complaint Details
+    <div className="animate-fade-in w-full max-w-7xl mx-auto">
+      <Link to="/history" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-700 hover:text-primary-800 hover:underline mb-4">
+        <ArrowLeft size={16} /> Back to Complaints
       </Link>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
         {/* Main Details */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
           {/* Header Card */}
           <div className="card">
             <div className="flex items-start justify-between mb-4">
@@ -136,7 +136,7 @@ const ComplaintDetailPage: React.FC = () => {
             {(() => {
               const targetRes = getTargetResolution(complaint.createdAt, complaint.estimatedDays, complaint.resolvedAt);
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 mt-6">
                   <div className="bg-warm-50 rounded-xl p-3">
                     <p className="text-xs text-gray-500">Category</p>
                     <p className="text-sm font-semibold text-gray-800 mt-0.5">{complaint.category || complaint.aiCategory || 'Unclassified'}</p>
@@ -227,30 +227,39 @@ const ComplaintDetailPage: React.FC = () => {
         </div>
 
         {/* Timeline Sidebar */}
-        <div className="card h-fit">
-          <h3 className="font-bold text-gray-900 mb-4">Resolution Timeline</h3>
-          {complaint.statusHistory && complaint.statusHistory.length > 0 ? (
-            <div className="relative pl-6">
-              <div className="absolute left-2 top-1 bottom-1 w-0.5 bg-warm-200" />
-              {complaint.statusHistory.map((h, i) => (
-                <div key={i} className="relative mb-5 last:mb-0">
-                  <div className={`absolute -left-4 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
-                    h.status === 'RESOLVED' ? 'bg-green-500' :
-                    h.status === 'REJECTED' ? 'bg-red-500' :
-                    h.status === 'IN_PROGRESS' ? 'bg-blue-500' :
-                    'bg-amber-500'
-                  }`} />
-                  <div>
-                    <StatusBadge status={h.status} />
-                    <p className="text-xs text-gray-400 mt-1">{formatDateTime(h.changedAt)}</p>
-                    {h.remarks && <p className="text-xs text-gray-600 mt-1">{h.remarks}</p>}
+        <div className="lg:col-span-5 xl:col-span-4">
+          <div className="card sticky top-6">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center justify-between">
+              <span>Resolution Timeline</span>
+              <span className="text-xs font-normal text-gray-400">Live Status</span>
+            </h3>
+            {complaint.statusHistory && complaint.statusHistory.length > 0 ? (
+              <div className="relative pl-6">
+                <div className="absolute left-2 top-1 bottom-1 w-0.5 bg-warm-200" />
+                {complaint.statusHistory.map((h, i) => (
+                  <div key={i} className="relative mb-5 last:mb-0">
+                    <div className={`absolute -left-4 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
+                      h.status === 'RESOLVED' ? 'bg-green-500' :
+                      h.status === 'REJECTED' ? 'bg-red-500' :
+                      h.status === 'IN_PROGRESS' ? 'bg-blue-500' :
+                      'bg-amber-500'
+                    }`} />
+                    <div>
+                      <StatusBadge status={h.status} />
+                      <p className="text-xs text-gray-400 mt-1">{formatDateTime(h.changedAt)}</p>
+                      {h.remarks && (
+                        <p className="text-xs text-gray-600 mt-1 leading-relaxed break-words bg-warm-50/70 rounded-lg p-2 border border-warm-100">
+                          {h.remarks}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 text-center py-4">No timeline entries yet.</p>
-          )}
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-4">No timeline entries yet.</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

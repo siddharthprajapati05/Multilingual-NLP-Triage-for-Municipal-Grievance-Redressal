@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, X, Mic, Type, Sparkles, CheckCircle } from 'lucide-react';
+import { Camera, X, Mic, Type, Sparkles, CheckCircle, Info } from 'lucide-react';
 import { submitComplaint } from '../../services/complaints';
 import api from '../../services/api';
 import { Alert, Spinner } from '../../components/ui';
@@ -142,10 +142,10 @@ const SubmitComplaintPage: React.FC = () => {
   }
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto">
-      <div className="page-header">
-        <h1 className="page-title">Submit a Complaint</h1>
-        <p className="page-subtitle">Describe your issue in your preferred language.</p>
+    <div className="animate-fade-in w-full max-w-6xl">
+      <div className="page-header mb-6">
+        <h1 className="page-title text-2xl font-bold text-gray-900">Submit a Complaint</h1>
+        <p className="page-subtitle text-gray-500 mt-1">Describe your civic grievance in your preferred regional language.</p>
       </div>
 
       {error && (
@@ -154,156 +154,206 @@ const SubmitComplaintPage: React.FC = () => {
         </div>
       )}
 
-      <div className="card space-y-6">
-        {/* Input Mode Toggle */}
-        <div className="flex rounded-xl border border-warm-200 overflow-hidden">
-          <button
-            onClick={() => setInputMode('type')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors ${
-              inputMode === 'type' ? 'bg-primary-700 text-white' : 'text-gray-600 hover:bg-warm-50'
-            }`}
-          >
-            <Type size={16} />
-            Type Complaint
-          </button>
-          <button
-            onClick={() => setInputMode('voice')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors ${
-              inputMode === 'voice' ? 'bg-primary-700 text-white' : 'text-gray-600 hover:bg-warm-50'
-            }`}
-          >
-            <Mic size={16} />
-            Voice Complaint
-          </button>
-        </div>
-
-        {/* Language Selection */}
-        <div>
-          <label className="form-label">Select Language</label>
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-            {LANGUAGES.slice(0, 10).map(lang => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setForm({ ...form, language: lang.code })}
-                className={`p-2 rounded-lg border text-center transition-all text-xs ${
-                  form.language === lang.code
-                    ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
-                    : 'border-warm-200 hover:border-primary-300 text-gray-600'
-                }`}
-              >
-                <div className="font-bold">{lang.script}</div>
-                <div className="text-[10px] mt-0.5">{lang.name}</div>
-              </button>
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
+        {/* Main Complaint Form */}
+        <div className="lg:col-span-8 card space-y-6">
+          {/* Input Mode Toggle */}
+          <div className="flex rounded-xl border border-warm-200 overflow-hidden">
+            <button
+              onClick={() => setInputMode('type')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors ${
+                inputMode === 'type' ? 'bg-primary-700 text-white' : 'text-gray-600 hover:bg-warm-50'
+              }`}
+            >
+              <Type size={16} />
+              Type Complaint
+            </button>
+            <button
+              onClick={() => setInputMode('voice')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-colors ${
+                inputMode === 'voice' ? 'bg-primary-700 text-white' : 'text-gray-600 hover:bg-warm-50'
+              }`}
+            >
+              <Mic size={16} />
+              Voice Complaint
+            </button>
           </div>
-        </div>
 
-        {/* Complaint Text */}
-        {inputMode === 'type' ? (
+          {/* Language Selection */}
           <div>
-            <label className="form-label">Complaint Description *</label>
-            <textarea
-              className="form-input h-36 resize-none"
-              placeholder="Describe your complaint in detail… e.g., garbage not collected for 3 days"
-              value={form.text}
-              onChange={e => setForm({ ...form, text: e.target.value.slice(0, MAX_TEXT) })}
-            />
-            <p className="text-xs text-gray-400 text-right mt-1">{form.text.length} / {MAX_TEXT}</p>
-          </div>
-        ) : (
-          <div className="border border-warm-200 rounded-xl p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-3">
-              <Mic size={28} className="text-primary-600" />
-            </div>
-            <p className="text-sm text-gray-600 mb-2">Voice input coming with AI model integration</p>
-            <p className="text-xs text-gray-400">Switch to "Type Complaint" to submit now</p>
-          </div>
-        )}
-
-        {/* Locality */}
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="form-label">Locality / Area</label>
-            <input
-              className="form-input"
-              placeholder="e.g., Sector 12, Andheri"
-              value={form.locality}
-              onChange={e => setForm({ ...form, locality: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="form-label">Full Address (optional)</label>
-            <input
-              className="form-input"
-              placeholder="Street, landmark"
-              value={form.address}
-              onChange={e => setForm({ ...form, address: e.target.value })}
-            />
-          </div>
-        </div>
-
-        {/* Photo Upload */}
-        <div>
-          <label className="form-label">Attach Photo (Optional)</label>
-          <div
-            onClick={() => fileRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-              photoPreview ? 'border-primary-300 bg-primary-50' : 'border-warm-300 hover:border-primary-400'
-            }`}
-          >
-            {photoPreview ? (
-              <div className="relative inline-block">
-                <img src={photoPreview} alt="Preview" className="max-h-40 rounded-lg mx-auto" />
+            <label className="form-label">Select Language</label>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              {LANGUAGES.slice(0, 10).map(lang => (
                 <button
+                  key={lang.code}
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setPhoto(null); setPhotoPreview(null); }}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
+                  onClick={() => setForm({ ...form, language: lang.code })}
+                  className={`p-2 rounded-lg border text-center transition-all text-xs ${
+                    form.language === lang.code
+                      ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold shadow-sm'
+                      : 'border-warm-200 hover:border-primary-300 text-gray-600'
+                  }`}
                 >
-                  <X size={12} />
+                  <div className="font-bold">{lang.script}</div>
+                  <div className="text-[10px] mt-0.5">{lang.name}</div>
                 </button>
-              </div>
-            ) : (
-              <div>
-                <Camera size={28} className="mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-500">Click to upload photo</p>
-                <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP up to 5MB</p>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handlePhotoChange}
-          />
-        </div>
 
-        {/* AI Notice */}
-        <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
-          <Sparkles size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-green-800">AI-Powered Classification Active</p>
-            <p className="text-xs text-green-700 mt-0.5">
-              After submission, the AI will automatically detect the language, translate your complaint
-              to English, classify it, assign it to the right department, and estimate a resolution time.
-            </p>
-          </div>
-        </div>
-
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          disabled={loading || !form.text.trim()}
-          className="btn-primary w-full py-3"
-        >
-          {loading ? (
-            <><Spinner size="sm" className="border-white border-t-transparent" /> Submitting…</>
+          {/* Complaint Text */}
+          {inputMode === 'type' ? (
+            <div>
+              <label className="form-label">Complaint Description *</label>
+              <textarea
+                className="form-input h-36 resize-none"
+                placeholder="Describe your complaint in detail… e.g., Street light near community park has not been functioning for the past 4 days."
+                value={form.text}
+                onChange={e => setForm({ ...form, text: e.target.value.slice(0, MAX_TEXT) })}
+              />
+              <p className="text-xs text-gray-400 text-right mt-1">{form.text.length} / {MAX_TEXT}</p>
+            </div>
           ) : (
-            'Submit Complaint →'
+            <div className="border border-warm-200 rounded-xl p-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <Mic size={28} className="text-primary-600" />
+              </div>
+              <p className="text-sm text-gray-600 mb-2">Voice input coming with AI model integration</p>
+              <p className="text-xs text-gray-400">Switch to "Type Complaint" to submit now</p>
+            </div>
           )}
-        </button>
+
+          {/* Locality */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="form-label">Locality / Area</label>
+              <input
+                className="form-input"
+                placeholder="e.g., Sector 12, Indiranagar"
+                value={form.locality}
+                onChange={e => setForm({ ...form, locality: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="form-label">Full Address (optional)</label>
+              <input
+                className="form-input"
+                placeholder="Street, landmark, ward number"
+                value={form.address}
+                onChange={e => setForm({ ...form, address: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Photo Upload */}
+          <div>
+            <label className="form-label">Attach Photo (Optional)</label>
+            <div
+              onClick={() => fileRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                photoPreview ? 'border-primary-300 bg-primary-50' : 'border-warm-300 hover:border-primary-400'
+              }`}
+            >
+              {photoPreview ? (
+                <div className="relative inline-block">
+                  <img src={photoPreview} alt="Preview" className="max-h-40 rounded-lg mx-auto" />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setPhoto(null); setPhotoPreview(null); }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs shadow-md"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <Camera size={28} className="mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">Click to upload photo</p>
+                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP up to 5MB</p>
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+          </div>
+
+          {/* AI Notice */}
+          <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
+            <Sparkles size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-green-800">AI-Powered Classification Active</p>
+              <p className="text-xs text-green-700 mt-0.5">
+                After submission, the AI will automatically detect the language, translate your complaint
+                to English, classify it, assign it to the right department, and estimate a resolution time.
+              </p>
+            </div>
+          </div>
+
+          {/* Submit */}
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !form.text.trim()}
+            className="btn-primary w-full py-3"
+          >
+            {loading ? (
+              <><Spinner size="sm" className="border-white border-t-transparent" /> Submitting…</>
+            ) : (
+              'Submit Complaint →'
+            )}
+          </button>
+        </div>
+
+        {/* Sidebar Info & Guidelines */}
+        <div className="lg:col-span-4 space-y-4">
+          <div className="card bg-gradient-to-br from-primary-50/70 via-warm-50 to-white border border-primary-100">
+            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2 mb-3">
+              <Sparkles size={16} className="text-primary-700" />
+              How AI Triage Works
+            </h3>
+            <ul className="space-y-2.5 text-xs text-gray-600">
+              <li className="flex items-start gap-2">
+                <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-[10px] mt-0.5 flex-shrink-0">1</span>
+                <span><strong>Multilingual NLP</strong>: Write in Hindi, Bengali, Tamil, Telugu, Marathi, or any of 10 languages.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-[10px] mt-0.5 flex-shrink-0">2</span>
+                <span><strong>Instant Translation</strong>: Automatically translates to English for municipal officers.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-[10px] mt-0.5 flex-shrink-0">3</span>
+                <span><strong>Smart SLA & Routing</strong>: Automatically routes to the correct department and assigns SLA resolution days.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="card">
+            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2 mb-3">
+              <Info size={16} className="text-amber-600" />
+              Guidelines for Fast Redressal
+            </h3>
+            <ul className="space-y-2 text-xs text-gray-600 list-disc pl-4 leading-relaxed">
+              <li>Specify accurate <strong>locality or landmark</strong> for field inspection teams.</li>
+              <li>Include a photo of the issue (e.g. leaking pipeline, garbage pile, pothole).</li>
+              <li>If there is an accident risk or health emergency, mention it clearly in your description.</li>
+            </ul>
+          </div>
+
+          <div className="card bg-warm-50/60 border border-warm-200">
+            <h4 className="text-xs font-semibold text-gray-700 mb-1">Emergency Situations?</h4>
+            <p className="text-[11px] text-gray-500 leading-relaxed mb-2">
+              For immediate life threats, active fire or live power line collapse, please contact:
+            </p>
+            <div className="flex gap-2 text-xs font-mono font-semibold text-primary-800">
+              <span className="bg-white px-2 py-1 rounded border border-warm-200">Emergency: 112</span>
+              <span className="bg-white px-2 py-1 rounded border border-warm-200">Fire: 101</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

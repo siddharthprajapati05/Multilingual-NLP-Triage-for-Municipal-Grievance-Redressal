@@ -53,13 +53,14 @@ NLLB_CODES = {"hi": "hin_Deva", "mr": "mar_Deva", "bn": "ben_Beng", "ta": "tam_T
 HIGH_KEYWORDS = [
     # English
     "fire", "flood", "accident", "accidents", "death", "died", "injury", "injured", "emergency", "danger",
-    "collapse", "explosion", "sewage overflow", "contaminated", "live wire", "electric shock",
+    "collapse", "explosion", "sewage overflow", "contaminated", "contaminated water", "live wire", "electric shock",
     "open manhole", "electrocut", "live electric", "sparking", "sparks", "exposed wire", "fallen tree",
-    "pothole accident", "deep pothole", "cave-in",
+    "pothole accident", "deep pothole", "cave-in", "no drinking water", "no water supply", "water supply stopped",
+    "no water for", "water crisis",
     # Hindi
-    "आग", "बाढ़", "दुर्घटना", "मृत्यु", "मौत", "आपातकाल", "आपात", "खतरा", "करंट", "गंभीर",
+    "आग", "बाढ़", "दुर्घटना", "मृत्यु", "मौत", "आपातकाल", "आपात", "खतरा", "करंट", "गंभीर", "पानी नहीं आ रहा", "पीने का पानी",
     # Bengali
-    "দুর্ঘটনা", "আগুন", "বন্যা", "মৃত্যু", "মৃত", "বিপদ", "জরুরি", "বিদ্যুৎস্পৃষ্ট", "গর্তে দুর্ঘটনা",
+    "দুর্ঘটনা", "আগুন", "বন্যা", "মৃত্যু", "মৃত", "বিপদ", "জরুরি", "বিদ্যুৎস্পৃষ্ট", "গর্তে দুর্ঘটনা", "জল নেই", "পানীয় জল",
     # Tamil
     "விபத்து", "தீ", "வெள்ளம்", "அவசரம்", "அவசர", "மரணம்", "ஆபத்து", "மின்சாரம்",
     # Telugu

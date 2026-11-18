@@ -246,7 +246,7 @@ const SLA_LOOKUP: Record<string, number> = {
 };
 
 router.patch('/complaints/:id/ai-correction', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { category, departmentId, urgency, reason } = req.body;
+  const { category, departmentId, urgency, estimatedDays, reason } = req.body;
   try {
     const existing = await prisma.complaint.findUnique({ where: { id: req.params.id } });
     if (!existing) {
@@ -257,7 +257,14 @@ router.patch('/complaints/:id/ai-correction', async (req: AuthenticatedRequest, 
     const finalCategory = category || existing.category || existing.aiCategory || 'General';
     const finalUrgency = (urgency as ComplaintUrgency) || existing.urgency;
     const lookupKey = `${finalCategory}_${finalUrgency}`;
-    const newEstimatedDays = SLA_LOOKUP[lookupKey] || 7;
+    const autoEstimatedDays = SLA_LOOKUP[lookupKey] || 7;
+
+    const parsedCustomDays = estimatedDays !== undefined && estimatedDays !== null && estimatedDays !== ''
+      ? parseInt(String(estimatedDays), 10)
+      : null;
+    const newEstimatedDays = (parsedCustomDays && !isNaN(parsedCustomDays) && parsedCustomDays > 0)
+      ? parsedCustomDays
+      : autoEstimatedDays;
 
     // Auto-resolve departmentId if category changed and no explicit departmentId given
     let finalDepartmentId = departmentId || existing.departmentId;
@@ -294,13 +301,13 @@ router.patch('/complaints/:id/ai-correction', async (req: AuthenticatedRequest, 
         complaintId: complaint.id,
         status: complaint.status,
         remarks: reason
-          ? `Manual Admin Override: Category → ${finalCategory}, Urgency → ${finalUrgency} (${reason})`
-          : `Manual Admin Override: Category → ${finalCategory}, Urgency → ${finalUrgency}`,
+          ? `Manual Admin Override: Category → ${finalCategory}, Urgency → ${finalUrgency}, Resolution → ${newEstimatedDays} days (${reason})`
+          : `Manual Admin Override: Category → ${finalCategory}, Urgency → ${finalUrgency}, Resolution → ${newEstimatedDays} days`,
         changedBy: req.admin?.id || 'admin',
       },
     });
 
-    res.json({ success: true, message: 'Complaint category and urgency updated successfully', complaint });
+    res.json({ success: true, message: 'Complaint category, urgency, and resolution days updated successfully', complaint });
   } catch (error) {
     console.error('AI correction error:', error);
     res.status(500).json({ success: false, message: 'Failed to update AI prediction' });

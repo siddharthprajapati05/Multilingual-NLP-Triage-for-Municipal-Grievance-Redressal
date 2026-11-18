@@ -20,6 +20,18 @@ const CATEGORIES = [
   'General',
 ];
 
+const SLA_LOOKUP: Record<string, number> = {
+  'Sanitation_HIGH': 2, 'Sanitation_MEDIUM': 5, 'Sanitation_LOW': 10,
+  'Water Supply_HIGH': 1, 'Water Supply_MEDIUM': 4, 'Water Supply_LOW': 8,
+  'Street Lighting_HIGH': 3, 'Street Lighting_MEDIUM': 7, 'Street Lighting_LOW': 14,
+  'Roads & Maintenance_HIGH': 3, 'Roads & Maintenance_MEDIUM': 7, 'Roads & Maintenance_LOW': 15,
+  'Roads & Infrastructure_HIGH': 3, 'Roads & Infrastructure_MEDIUM': 7, 'Roads & Infrastructure_LOW': 15,
+  'Parks & Recreation_HIGH': 5, 'Parks & Recreation_MEDIUM': 10, 'Parks & Recreation_LOW': 15,
+  'Electrical_HIGH': 1, 'Electrical_MEDIUM': 3, 'Electrical_LOW': 7,
+  'Health_HIGH': 1, 'Health_MEDIUM': 3, 'Health_LOW': 7,
+  'General_HIGH': 3, 'General_MEDIUM': 7, 'General_LOW': 14,
+};
+
 const getTargetResolution = (createdAtStr: string, estimatedDays?: number, resolvedAt?: string) => {
   if (resolvedAt) {
     return {
@@ -84,6 +96,54 @@ const AdminComplaintDetailPage: React.FC = () => {
   const [showStatus, setShowStatus] = useState(false);
   const [statusForm, setStatusForm] = useState({ status: '', remarks: '', resolution: '' });
   const [statusLoading, setStatusLoading] = useState(false);
+
+  // Manual Override / Correction modal
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [correctionForm, setCorrectionForm] = useState({
+    category: '',
+    departmentId: '',
+    urgency: 'MEDIUM',
+    estimatedDays: '' as number | string,
+    reason: '',
+  });
+  const [correctionLoading, setCorrectionLoading] = useState(false);
+
+  const openCorrectionModal = () => {
+    if (!complaint) return;
+    const cat = complaint.category || complaint.aiCategory || 'General';
+    const urg = complaint.urgency || complaint.aiUrgency || 'MEDIUM';
+    const defaultDays = complaint.estimatedDays || SLA_LOOKUP[`${cat}_${urg}`] || 7;
+    setCorrectionForm({
+      category: cat,
+      departmentId: complaint.departmentId || '',
+      urgency: urg,
+      estimatedDays: defaultDays,
+      reason: '',
+    });
+    setShowCorrection(true);
+  };
+
+  const handleCorrection = async () => {
+    if (!id) return;
+    setCorrectionLoading(true);
+    try {
+      const parsedDays = correctionForm.estimatedDays ? parseInt(String(correctionForm.estimatedDays), 10) : undefined;
+      await correctAIPrediction(id, {
+        category: correctionForm.category,
+        departmentId: correctionForm.departmentId,
+        urgency: correctionForm.urgency,
+        estimatedDays: parsedDays && !isNaN(parsedDays) ? parsedDays : undefined,
+        reason: correctionForm.reason,
+      });
+      setSuccess('Category, Urgency & Resolution Days updated manually! SLA recalculated.');
+      setShowCorrection(false);
+      fetchData();
+    } catch {
+      setError('Failed to update complaint details.');
+    } finally {
+      setCorrectionLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     if (!id) return;
@@ -261,7 +321,15 @@ const AdminComplaintDetailPage: React.FC = () => {
                     <Sparkles size={16} className="text-green-600" />
                     <span className="text-sm font-semibold text-green-800">AI Classification</span>
                   </div>
-                  <span className="badge-resolved text-[10px]">Processed</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={openCorrectionModal}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 bg-white border border-primary-200 hover:bg-primary-50 px-2 py-0.5 rounded-lg shadow-sm"
+                    >
+                      <Edit3 size={10} /> Correct / Override
+                    </button>
+                    <span className="badge-resolved text-[10px]">Processed</span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div><span className="text-gray-500">Category:</span><br/><span className="font-semibold">{complaint.aiCategory}</span></div>
@@ -296,6 +364,9 @@ const AdminComplaintDetailPage: React.FC = () => {
             </button>
             <button onClick={() => setShowStatus(true)} className="btn-secondary">
               <Send size={14} /> Update Status
+            </button>
+            <button onClick={openCorrectionModal} className="btn-secondary text-primary-700 border-primary-300 hover:bg-primary-50">
+              <Edit3 size={14} /> Manual Override (Category / Urgency / SLA)
             </button>
           </div>
         </div>
@@ -416,6 +487,99 @@ const AdminComplaintDetailPage: React.FC = () => {
             <button onClick={() => setShowStatus(false)} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleStatusUpdate} className="btn-primary flex-1" disabled={statusLoading}>
               {statusLoading ? 'Updating…' : 'Update Status'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Manual AI Prediction Override Modal */}
+      <Modal isOpen={showCorrection} onClose={() => setShowCorrection(false)} title="Manual Override: Category, Urgency & Resolution SLA">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">
+            Override category, urgency, department, or resolution days if the AI misclassified or if immediate priority intervention is needed.
+          </p>
+          <div>
+            <label className="form-label">Category *</label>
+            <select
+              className="form-input"
+              value={correctionForm.category}
+              onChange={e => {
+                const newCat = e.target.value;
+                const recDays = SLA_LOOKUP[`${newCat}_${correctionForm.urgency}`] || 7;
+                setCorrectionForm({ ...correctionForm, category: newCat, estimatedDays: recDays });
+              }}
+            >
+              <option value="">Select category…</option>
+              {CATEGORIES.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Urgency *</label>
+            <select
+              className="form-input"
+              value={correctionForm.urgency}
+              onChange={e => {
+                const newUrg = e.target.value;
+                const recDays = SLA_LOOKUP[`${correctionForm.category}_${newUrg}`] || 7;
+                setCorrectionForm({ ...correctionForm, urgency: newUrg, estimatedDays: recDays });
+              }}
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label flex items-center justify-between">
+              <span>Estimated Resolution Days (SLA) *</span>
+              <span className="text-[11px] font-normal text-gray-500">
+                Recommended: ~{SLA_LOOKUP[`${correctionForm.category}_${correctionForm.urgency}`] || 7} days
+              </span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                max="90"
+                className="form-input pr-12"
+                placeholder={`e.g. ${SLA_LOOKUP[`${correctionForm.category}_${correctionForm.urgency}`] || 7}`}
+                value={correctionForm.estimatedDays}
+                onChange={e => setCorrectionForm({ ...correctionForm, estimatedDays: e.target.value })}
+              />
+              <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">days</span>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">
+              Specify how many days this complaint should be resolved within (e.g. 1–3 days for critical emergencies).
+            </p>
+          </div>
+          <div>
+            <label className="form-label">Department (optional)</label>
+            <select
+              className="form-input"
+              value={correctionForm.departmentId}
+              onChange={e => setCorrectionForm({ ...correctionForm, departmentId: e.target.value })}
+            >
+              <option value="">Auto-assign based on Category</option>
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Reason for Override (optional)</label>
+            <input
+              className="form-input"
+              placeholder="e.g. Pothole caused accident, requires urgent 2-day repair"
+              value={correctionForm.reason}
+              onChange={e => setCorrectionForm({ ...correctionForm, reason: e.target.value })}
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => setShowCorrection(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={handleCorrection} className="btn-primary flex-1" disabled={correctionLoading || !correctionForm.category}>
+              {correctionLoading ? 'Saving…' : 'Save & Update SLA'}
             </button>
           </div>
         </div>

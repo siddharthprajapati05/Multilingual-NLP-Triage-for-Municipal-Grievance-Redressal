@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, ChevronRight, Globe, Sparkles, Clock } from 'lucide-react';
+import { Search, ChevronRight, Globe, Sparkles, Clock, Calendar } from 'lucide-react';
 import { trackComplaint } from '../../services/complaints';
 import { Complaint } from '../../types';
 import { StatusBadge, UrgencyBadge, Spinner, Alert } from '../../components/ui';
@@ -93,10 +93,10 @@ const TrackComplaintPage: React.FC = () => {
     : -1;
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto">
-      <div className="page-header">
-        <h1 className="page-title">Track Your Complaint</h1>
-        <p className="page-subtitle">Enter your complaint ID to check the current status.</p>
+    <div className="animate-fade-in w-full max-w-4xl">
+      <div className="page-header mb-6">
+        <h1 className="page-title text-2xl font-bold text-gray-900">Track Your Complaint</h1>
+        <p className="page-subtitle text-gray-500 mt-1">Enter your complaint ID to check the current status.</p>
       </div>
 
       <div className="card mb-6">

@@ -19,12 +19,31 @@ export const generateTicketId = async (prisma: PrismaClient): Promise<string> =>
 export const callAIService = async (
   text: string,
   language: string
-): Promise<{ category?: string; department?: string; urgency?: string; confidence?: number }> => {
+): Promise<{
+  category?: string;
+  department?: string;
+  urgency?: string;
+  confidence?: number;
+  translatedText?: string;
+  detectedLanguage?: string;
+  estimatedResolutionDays?: number;
+  modelVersion?: string;
+}> => {
   const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
   const response = await axios.post(
     `${aiServiceUrl}/predict`,
     { text, language },
-    { timeout: 5000 }
+    { timeout: 60000 }
   );
-  return response.data;
+  const d = response.data;
+  return {
+    category:                d.category,
+    department:              d.department,
+    urgency:                 d.urgency,
+    confidence:              d.confidence,
+    translatedText:          d.translated_text,
+    detectedLanguage:        d.detected_language,
+    estimatedResolutionDays: d.estimated_resolution_days,
+    modelVersion:            d.model_version,
+  };
 };

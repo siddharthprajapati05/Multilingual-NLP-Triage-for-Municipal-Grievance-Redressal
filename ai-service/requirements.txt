@@ -1,4 +1,10 @@
-fastapi>=0.110.0
-uvicorn[standard]>=0.29.0
-pydantic>=2.6.0
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.0
 python-dotenv>=1.0.1
+torch>=2.1
+transformers>=4.41
+sentencepiece>=0.2
+langdetect>=1.0.9
+accelerate>=0.26
+protobuf>=3.20

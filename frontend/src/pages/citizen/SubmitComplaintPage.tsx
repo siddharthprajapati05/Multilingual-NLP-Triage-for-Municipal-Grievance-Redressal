@@ -23,6 +23,7 @@ const SubmitComplaintPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [ticketId, setTicketId] = useState('');
+  const [aiResult, setAiResult] = useState<Partial<import('../../types').Complaint> | null>(null);
   const [inputMode, setInputMode] = useState<'type' | 'voice'>('type');
   const fileRef = useRef<HTMLInputElement>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -56,6 +57,7 @@ const SubmitComplaintPage: React.FC = () => {
 
       const res = await submitComplaint(fd);
       setTicketId(res.ticketId);
+      setAiResult(res.complaint || null);
       setStep('success');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to submit complaint.');
@@ -72,12 +74,54 @@ const SubmitComplaintPage: React.FC = () => {
             <CheckCircle size={40} className="text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Complaint Submitted!</h2>
-          <p className="text-gray-500 mb-6">Your complaint has been successfully registered.</p>
-          <div className="bg-warm-50 rounded-xl p-4 mb-6 border border-warm-200">
+          <p className="text-gray-500 mb-4">Your complaint has been successfully registered.</p>
+          <div className="bg-warm-50 rounded-xl p-4 mb-4 border border-warm-200">
             <p className="text-xs text-gray-500 mb-1">Your Ticket ID</p>
             <p className="text-2xl font-bold text-primary-700 font-mono">{ticketId}</p>
             <p className="text-xs text-gray-400 mt-1">Save this for future reference</p>
           </div>
+
+          {/* AI Classification Result */}
+          {aiResult?.aiProcessed && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 text-left">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={15} className="text-green-600" />
+                <span className="text-sm font-semibold text-green-800">AI Classification</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                <div>
+                  <span className="text-gray-500">Category</span>
+                  <p className="font-semibold text-gray-800">{aiResult.aiCategory}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Urgency</span>
+                  <p className="font-semibold text-gray-800">{aiResult.aiUrgency}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Department</span>
+                  <p className="font-semibold text-gray-800">{aiResult.aiDepartment}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Est. Resolution</span>
+                  <p className="font-semibold text-gray-800">
+                    {aiResult.estimatedDays ? `~${aiResult.estimatedDays} days` : '—'}
+                  </p>
+                </div>
+              </div>
+              {aiResult.translatedText && aiResult.detectedLang && aiResult.detectedLang !== 'en' && (
+                <div className="mt-2 pt-2 border-t border-green-200">
+                  <p className="text-[10px] text-gray-500 mb-0.5">English translation</p>
+                  <p className="text-xs text-gray-700 italic">"{aiResult.translatedText}"</p>
+                </div>
+              )}
+              {aiResult.aiConfidence && (
+                <p className="text-[10px] text-gray-400 mt-2">
+                  Confidence: {(aiResult.aiConfidence * 100).toFixed(1)}%
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button
               onClick={() => navigate(`/track?id=${ticketId}`)}
@@ -86,7 +130,7 @@ const SubmitComplaintPage: React.FC = () => {
               Track Status
             </button>
             <button
-              onClick={() => { setStep('form'); setForm({ text: '', language: 'en', locality: '', address: '' }); setPhoto(null); setPhotoPreview(null); }}
+              onClick={() => { setStep('form'); setForm({ text: '', language: 'en', locality: '', address: '' }); setPhoto(null); setPhotoPreview(null); setAiResult(null); }}
               className="btn-primary flex-1"
             >
               New Complaint
@@ -237,12 +281,13 @@ const SubmitComplaintPage: React.FC = () => {
         </div>
 
         {/* AI Notice */}
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <Sparkles size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
+          <Sparkles size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-amber-800">AI Classification</p>
-            <p className="text-xs text-amber-700 mt-0.5">
-              AI-powered complaint categorization is being integrated. Your complaint will be processed manually in the meantime.
+            <p className="text-sm font-semibold text-green-800">AI-Powered Classification Active</p>
+            <p className="text-xs text-green-700 mt-0.5">
+              After submission, the AI will automatically detect the language, translate your complaint
+              to English, classify it, assign it to the right department, and estimate a resolution time.
             </p>
           </div>
         </div>

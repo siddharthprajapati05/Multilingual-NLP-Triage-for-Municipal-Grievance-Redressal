@@ -2,10 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install system dependencies (needed by some torch/sentencepiece builds)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy application code and model files
+COPY app/ ./app/
+COPY models/ ./models/
 
 EXPOSE 8000
 

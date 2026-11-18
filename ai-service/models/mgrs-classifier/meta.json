@@ -1,0 +1,52 @@
+{
+  "categories": [
+    "Sanitation",
+    "Water Supply",
+    "Street Lighting",
+    "Roads & Maintenance",
+    "Parks & Recreation",
+    "Electrical",
+    "Health",
+    "General"
+  ],
+  "urgency_levels": [
+    "LOW",
+    "MEDIUM",
+    "HIGH"
+  ],
+  "max_len": 128,
+  "backbone": "ai4bharat/IndicBERTv2-MLM-only",
+  "model_version": "mgrs-indicbertv2-v1",
+  "translator": "facebook/nllb-200-distilled-600M",
+  "metrics": {
+    "test_icmc": {
+      "rows": 977,
+      "cat_acc": 0.8587512794268168,
+      "cat_macro_f1": 0.7531931151561492
+    },
+    "test_bangla": {
+      "rows": 517,
+      "cat_acc": 0.9381044487427466,
+      "cat_macro_f1": 0.808393570958434,
+      "urg_macro_f1": 0.4752224023801704
+    },
+    "test_trans": {
+      "rows": 898,
+      "cat_acc": 0.8240534521158129,
+      "cat_macro_f1": 0.6987786247729921
+    },
+    "test_synth": {
+      "rows": 5471,
+      "cat_acc": 0.863096326082983,
+      "cat_macro_f1": 0.7938494791385116,
+      "urg_macro_f1": 0.3943329870359673
+    }
+  },
+  "train_rows_by_source": {
+    "synthetic": 14861,
+    "icmc_translated": 11033,
+    "icmc_real": 7811,
+    "bangla_real": 4126
+  },
+  "notes": "Urgency head trained on synthetic + real Bangla labels only. Resolution days are a lookup table."
+}

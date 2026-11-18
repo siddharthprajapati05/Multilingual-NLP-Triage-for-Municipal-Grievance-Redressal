@@ -35,11 +35,37 @@ router.post(
       const ticketId = await generateTicketId(prisma);
 
       // Try AI service (non-blocking – won't break submission if unavailable)
-      let aiResult: { category?: string; department?: string; urgency?: string; confidence?: number } = {};
+      let aiResult: {
+        category?: string;
+        department?: string;
+        urgency?: string;
+        confidence?: number;
+        translatedText?: string;
+        detectedLanguage?: string;
+        estimatedResolutionDays?: number;
+        modelVersion?: string;
+      } = {};
       try {
         aiResult = await callAIService(text, language || 'en');
-      } catch {
-        // AI service is optional – complaint still gets submitted
+        console.log('AI service result:', aiResult);
+      } catch (err: any) {
+        console.warn('AI service call failed (continuing without AI):', err?.message || err);
+      }
+
+      // Auto-assign to matching Department if predicted by AI
+      let departmentId: string | null = null;
+      if (aiResult.department) {
+        const matchedDept = await prisma.department.findFirst({
+          where: {
+            OR: [
+              { name: { equals: aiResult.department, mode: 'insensitive' } },
+              { name: { contains: aiResult.category || '', mode: 'insensitive' } },
+            ],
+          },
+        });
+        if (matchedDept) {
+          departmentId = matchedDept.id;
+        }
       }
 
       const complaint = await prisma.complaint.create({
@@ -51,11 +77,15 @@ router.post(
           locality: locality || null,
           address: address || null,
           photoUrl: photoUrl || null,
+          departmentId,
           aiCategory: aiResult.category || null,
           aiDepartment: aiResult.department || null,
           aiUrgency: aiResult.urgency || null,
           aiConfidence: aiResult.confidence || null,
           aiProcessed: !!aiResult.category,
+          translatedText: aiResult.translatedText || null,
+          estimatedDays: aiResult.estimatedResolutionDays || null,
+          detectedLang: aiResult.detectedLanguage || null,
           status: ComplaintStatus.PENDING,
           urgency: (aiResult.urgency as ComplaintUrgency) || ComplaintUrgency.MEDIUM,
           category: aiResult.category || null,
@@ -67,7 +97,9 @@ router.post(
         data: {
           complaintId: complaint.id,
           status: ComplaintStatus.PENDING,
-          remarks: 'Complaint submitted successfully',
+          remarks: departmentId && aiResult.department
+            ? `Complaint submitted and auto-assigned to ${aiResult.department} by AI`
+            : 'Complaint submitted successfully',
           changedBy: 'system',
         },
       });
@@ -93,6 +125,10 @@ router.post(
           aiCategory: complaint.aiCategory,
           aiDepartment: complaint.aiDepartment,
           aiUrgency: complaint.aiUrgency,
+          aiConfidence: complaint.aiConfidence,
+          translatedText: complaint.translatedText,
+          estimatedDays: complaint.estimatedDays,
+          detectedLang: complaint.detectedLang,
         },
       });
     } catch (error) {
@@ -162,10 +198,19 @@ router.get('/track/:ticketId', async (req: AuthenticatedRequest, res: Response):
         id: true,
         ticketId: true,
         originalText: true,
+        language: true,
+        translatedText: true,
+        estimatedDays: true,
         category: true,
         urgency: true,
         status: true,
         locality: true,
+        aiCategory: true,
+        aiDepartment: true,
+        aiUrgency: true,
+        aiConfidence: true,
+        aiProcessed: true,
+        photoUrl: true,
         department: { select: { name: true } },
         createdAt: true,
         updatedAt: true,

@@ -62,6 +62,9 @@ model Complaint {
   aiUrgency       String?
   aiConfidence    Float?
   aiProcessed     Boolean           @default(false)
+  translatedText  String?           // English translation of originalText (produced by AI)
+  estimatedDays   Int?              // Estimated resolution days from lookup table
+  detectedLang    String?           // Language code detected by AI (may differ from user selection)
   
   assignedTo      String?
   officialRemarks String?

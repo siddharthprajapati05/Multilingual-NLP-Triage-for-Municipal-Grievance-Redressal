@@ -43,6 +43,9 @@ export interface Complaint {
   aiUrgency?: string;
   aiConfidence?: number;
   aiProcessed: boolean;
+  translatedText?: string;        // English translation produced by AI
+  estimatedDays?: number;         // Resolution days from lookup table
+  detectedLang?: string;          // Language code detected by AI
   assignedTo?: string;
   officialRemarks?: string;
   resolution?: string;

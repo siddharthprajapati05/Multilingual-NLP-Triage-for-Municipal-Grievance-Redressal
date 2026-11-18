@@ -57,20 +57,24 @@ services:
     ports:
       - "3000:80"
 
-  # ─── AI Service (Placeholder) ────────────────────────────────────────────────
+  # ─── AI Service ──────────────────────────────────────────────────────────────
   ai-service:
     build:
       context: ./ai-service
       dockerfile: Dockerfile
     container_name: mgrs-ai-service
     restart: unless-stopped
+    environment:
+      MGRS_MODEL_DIR: /app/models/mgrs-classifier
+      MGRS_TRANSLATE: "1"
     ports:
       - "8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 60s
 
 volumes:
   pgdata:

@@ -51,12 +51,29 @@ NLLB_CODES = {"hi": "hin_Deva", "mr": "mar_Deva", "bn": "ben_Beng", "ta": "tam_T
 # Danger words that always escalate urgency to HIGH (spec section 9; 'leak' is left out on purpose
 # because it would flag every dripping pipe as an emergency).
 HIGH_KEYWORDS = [
-    "fire", "flood", "accident", "death", "died", "injury", "injured", "emergency", "danger",
+    # English
+    "fire", "flood", "accident", "accidents", "death", "died", "injury", "injured", "emergency", "danger",
     "collapse", "explosion", "sewage overflow", "contaminated", "live wire", "electric shock",
     "open manhole", "electrocut", "live electric", "sparking", "sparks", "exposed wire", "fallen tree",
-    "आग", "बाढ़", "दुर्घटना", "मृत्यु", "आपातकाल", "आपात",
-    "தீ", "வெள்ளம்", "அவசரம்", "அவசர",
-    "ಬೆಂಕಿ", "ಪ್ರವಾಹ", "ತುರ್ತು",
+    "pothole accident", "deep pothole", "cave-in",
+    # Hindi
+    "आग", "बाढ़", "दुर्घटना", "मृत्यु", "मौत", "आपातकाल", "आपात", "खतरा", "करंट", "गंभीर",
+    # Bengali
+    "দুর্ঘটনা", "আগুন", "বন্যা", "মৃত্যু", "মৃত", "বিপদ", "জরুরি", "বিদ্যুৎস্পৃষ্ট", "গর্তে দুর্ঘটনা",
+    # Tamil
+    "விபத்து", "தீ", "வெள்ளம்", "அவசரம்", "அவசர", "மரணம்", "ஆபத்து", "மின்சாரம்",
+    # Telugu
+    "ప్రమాదం", "అగ్ని", "వరద", "మరణం", "అత్యవసర", "ప్రమాదకర", "విద్యుత్",
+    # Marathi
+    "अपघात", "आग", "पूर", "मृत्यू", "धोका", "तातडीने", "शॉक",
+    # Kannada
+    "ಅಪಘಾತ", "ಬೆಂಕಿ", "ಪ್ರವಾಹ", "ತುರ್ತು", "ಸಾವು", "ಅಪಾಯ",
+    # Gujarati
+    "અકસ્માત", "આગ", "પૂર", "મૃત્યુ", "જોખમ", "તાકીદ",
+    # Malayalam
+    "അപകടം", "തീ", "വെള്ളപ്പൊക്കം", "മരണം", "അടിയന്തരം", "അപകടകരമായ",
+    # Punjabi
+    "ਹਾਦਸਾ", "ਅੱਗ", "ਹੜ੍ਹ", "ਮੌਤ", "ਐਮਰਜੈਂਸੀ", "ਖ਼ਤਰਾ",
 ]
 
 
@@ -176,12 +193,13 @@ class MGRSPredictor:
     def translate_to_english(self, text, lang):
         if not text or not text.strip():
             return text
-        # 1. Fast online translation (completes in ~0.2s)
+        import urllib.request, urllib.parse, json
+
+        sl = lang if lang and lang != 'hin' else 'auto'
+        # 1. Primary Engine: Google client=dict-chrome-ex (fast & does not hit gtx 429)
         try:
-            import urllib.request, urllib.parse, json
-            sl = lang if lang and lang != 'hin' else 'auto'
-            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={sl}&tl=en&dt=t&q=" + urllib.parse.quote(text)
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'})
+            url = f"https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl={sl}&tl=en&dt=t&q=" + urllib.parse.quote(text)
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
             with urllib.request.urlopen(req, timeout=3.5) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
                 res = ''.join([x[0] for x in data[0] if x and x[0]])
@@ -190,7 +208,19 @@ class MGRSPredictor:
         except Exception:
             pass
 
-        # 2. Fallback to local NLLB-200 model if enabled
+        # 2. Secondary Engine: MyMemory Public API fallback
+        try:
+            url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(text)}&langpair={sl}|en"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                res = data.get('responseData', {}).get('translatedText')
+                if res and res.strip() and not res.startswith('MYMEMORY WARNING'):
+                    return res.strip()
+        except Exception:
+            pass
+
+        # 3. Third Fallback: Local NLLB-200 model if enabled
         if self.translate_enabled and lang in NLLB_CODES:
             try:
                 self._load_translator()

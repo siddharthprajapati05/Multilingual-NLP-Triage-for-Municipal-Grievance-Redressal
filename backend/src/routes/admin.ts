@@ -229,20 +229,80 @@ router.patch(
   }
 );
 
-// ─── Update AI prediction (admin correction) ──────────────────────────────────
+// ─── Update AI prediction (admin correction / manual override) ────────────────
+const SLA_LOOKUP: Record<string, number> = {
+  'Sanitation_HIGH': 2, 'Sanitation_MEDIUM': 5, 'Sanitation_LOW': 10,
+  'Water Supply_HIGH': 1, 'Water Supply_MEDIUM': 4, 'Water Supply_LOW': 8,
+  'Street Lighting_HIGH': 3, 'Street Lighting_MEDIUM': 7, 'Street Lighting_LOW': 14,
+  'Roads & Infrastructure_HIGH': 3, 'Roads & Infrastructure_MEDIUM': 7, 'Roads & Infrastructure_LOW': 15,
+  'Roads & Maintenance_HIGH': 3, 'Roads & Maintenance_MEDIUM': 7, 'Roads & Maintenance_LOW': 15,
+  'Parks & Recreation_HIGH': 5, 'Parks & Recreation_MEDIUM': 10, 'Parks & Recreation_LOW': 15,
+  'Electrical Department_HIGH': 1, 'Electrical Department_MEDIUM': 3, 'Electrical Department_LOW': 7,
+  'Electrical_HIGH': 1, 'Electrical_MEDIUM': 3, 'Electrical_LOW': 7,
+  'Health Department_HIGH': 1, 'Health Department_MEDIUM': 3, 'Health Department_LOW': 7,
+  'Health_HIGH': 1, 'Health_MEDIUM': 3, 'Health_LOW': 7,
+  'General Administration_HIGH': 3, 'General Administration_MEDIUM': 7, 'General Administration_LOW': 14,
+  'General_HIGH': 3, 'General_MEDIUM': 7, 'General_LOW': 14,
+};
+
 router.patch('/complaints/:id/ai-correction', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { category, departmentId, urgency } = req.body;
+  const { category, departmentId, urgency, reason } = req.body;
   try {
+    const existing = await prisma.complaint.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
+      res.status(404).json({ success: false, message: 'Complaint not found' });
+      return;
+    }
+
+    const finalCategory = category || existing.category || existing.aiCategory || 'General';
+    const finalUrgency = (urgency as ComplaintUrgency) || existing.urgency;
+    const lookupKey = `${finalCategory}_${finalUrgency}`;
+    const newEstimatedDays = SLA_LOOKUP[lookupKey] || 7;
+
+    // Auto-resolve departmentId if category changed and no explicit departmentId given
+    let finalDepartmentId = departmentId || existing.departmentId;
+    if (!departmentId && category && category !== existing.category) {
+      const matchedDept = await prisma.department.findFirst({
+        where: {
+          OR: [
+            { name: { contains: category, mode: 'insensitive' } },
+            { code: { contains: category.slice(0, 4).toUpperCase() } },
+          ],
+        },
+      });
+      if (matchedDept) finalDepartmentId = matchedDept.id;
+    }
+
     const complaint = await prisma.complaint.update({
       where: { id: req.params.id },
       data: {
         category: category || undefined,
-        departmentId: departmentId || undefined,
-        urgency: (urgency as ComplaintUrgency) || undefined,
+        departmentId: finalDepartmentId || undefined,
+        urgency: finalUrgency,
+        estimatedDays: newEstimatedDays,
+      },
+      include: {
+        department: { select: { id: true, name: true, code: true } },
+        user: { select: { id: true, fullName: true, email: true, mobile: true } },
+        statusHistory: { orderBy: { changedAt: 'asc' } },
       },
     });
-    res.json({ success: true, complaint });
+
+    // Record audit entry in status history
+    await prisma.complaintStatusHistory.create({
+      data: {
+        complaintId: complaint.id,
+        status: complaint.status,
+        remarks: reason
+          ? `Manual Admin Override: Category → ${finalCategory}, Urgency → ${finalUrgency} (${reason})`
+          : `Manual Admin Override: Category → ${finalCategory}, Urgency → ${finalUrgency}`,
+        changedBy: req.admin?.id || 'admin',
+      },
+    });
+
+    res.json({ success: true, message: 'Complaint category and urgency updated successfully', complaint });
   } catch (error) {
+    console.error('AI correction error:', error);
     res.status(500).json({ success: false, message: 'Failed to update AI prediction' });
   }
 });

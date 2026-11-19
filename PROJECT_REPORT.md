@@ -699,43 +699,15 @@ services:
 
 ---
 
-## 14. Conclusion & Project Retrospective
+## 14. Conclusion
 
-### 14.1 Summary of Accomplishments
+The **Municipal Grievance Redressal System (MGRS)** addresses a real-world problem in municipal governance: citizens struggle to file complaints because of language barriers, while municipal offices struggle with manual sorting delays and missed emergencies.
 
-The **Municipal Grievance Redressal System (MGRS)** successfully demonstrates that applied deep learning, when purposefully coupled with deterministic civic safeguards, can fundamentally transform public service delivery in multilingual societies. Over the course of this capstone development, several technical and architectural milestones were realized:
+Through this project, we built and integrated a complete, working solution:
+1. **Multilingual Access**: Citizens can submit grievances in 10 Indian languages or conversational Hinglish. The system automatically detects the language, translates it, and processes the complaint without forcing citizens to use formal English.
+2. **Automated Triage with IndicBERTv2**: Instead of manual clerical sorting, the fine-tuned model categorizes complaints across 8 departments and assigns urgency within seconds.
+3. **Safety & Practical Rules**: Recognizing that machine learning models aren't 100% accurate, we added keyword safety rules to immediately catch high-risk emergencies (like live wires or water crises) and set realistic resolution deadlines via an SLA lookup table.
+4. **Human Control**: Administrators have a clear dashboard to monitor complaints, update status, and manually override any AI classification or translation when needed, keeping a complete audit log.
+5. **Full-Stack Implementation**: The system is fully functional across all layers—React frontend, Express.js backend, PostgreSQL database, and FastAPI AI service—orchestrated with Docker for easy setup and testing.
 
-1. **End-to-End Multilingual NLP Pipeline**: Deployed a fine-tuned **IndicBERTv2** multi-task transformer backbone (**~277.46 Million parameters**) capable of processing complaints across **10 officially recognized Indian languages** and phonetic **Hinglish**, natively handling 7 distinct scripts without requiring citizens to communicate in formal English.
-2. **Sub-Second Automated Triage**: Reduced grievance intake and departmental routing time from typical manual triage windows of 3–5 business days down to **less than 250 milliseconds**, instantly dispatching grievances to the responsible civic authorities with an automated Service Level Agreement (SLA) deadline.
-3. **High-Accuracy Classification with Fallback Reliability**: Achieved **~86%–94% category classification accuracy** and robust macro-F1 scores across real-world and synthetic civic datasets, supported by a 3-tier translation cascade (Google Cloud Translation $\rightarrow$ MyMemory API $\rightarrow$ Meta NLLB-200 offline fallback).
-4. **Full-Stack Enterprise Architecture**: Delivered a production-grade, containerized microservices suite featuring a reactive React 18 TypeScript frontend, an asynchronous Node.js/Express REST backend, an ACID-compliant PostgreSQL schema with Prisma ORM migrations, and a high-performance Python FastAPI inference server.
-
----
-
-### 14.2 Key Engineering Insights & Paradigm Shifts
-
-Building an AI-driven public governance system exposed vital lessons that depart from standard academic machine learning workflows:
-
-* **The Imperative of Hybrid Architecture (Neural + Deterministic)**:
-  Statistical neural networks excel at semantic pattern recognition, but pure probabilistic predictions are insufficient when public safety is on the line. By augmenting IndicBERTv2 with deterministic safety layers (`HIGH_KEYWORDS` for immediate emergency escalation and `CATEGORY_KEYWORDS` for domain disambiguation), MGRS guarantees that critical hazards—such as fallen live electrical wires or drinking water contamination—are never downgraded or misdirected due to edge-case statistical variances.
-* **Tackling the "Colloquial Linguistic Reality"**:
-  In real-world civic governance across India, citizens predominantly interact via informal, phonetically romanized dialects (Hinglish) rather than pure classical scripts. Implementing custom Hinglish token detection, phonetic normalization (*panni* $\rightarrow$ *paani (tap water supply)*), and municipal-specific post-processing filters proved just as crucial to production accuracy as transformer fine-tuning.
-* **Human-in-the-Loop Governance as a First-Class Citizen**:
-  Rather than treating manual administrative interventions as system failures, MGRS embraces administrative overrides as an essential governance safeguard. The **Manual Override Engine** allows municipal officers to review AI predictions, adjust classifications, update resolution deadlines, and refine translations, while maintaining a tamper-proof audit trail in `ComplaintStatusHistory` to ensure civic transparency and institutional accountability.
-
----
-
-### 14.3 Societal & Civic Impact
-
-| Traditional Municipal Grievance Process | Modern MGRS AI-Driven Paradigm |
-| :--- | :--- |
-| **Linguistic Exclusion**: Non-English speakers struggle with English-only government forms or complex bureaucratic terminology. | **Linguistic Equity**: Citizens submit grievances in their native tongue or conversational slang through an intuitive, accessible interface. |
-| **Manual Triage Delays**: Physical complaint dockets sit unread at municipal desks for days awaiting manual assignment. | **Instantaneous Dispatch**: Real-time triage within milliseconds, eliminating clerical overhead and routing directly to field departments. |
-| **Hidden Emergencies**: Life-threatening civic hazards wait in the same sequential queue as minor aesthetic complaints. | **Automated Hazard Escalation**: Immediate priority escalation to `HIGH` urgency with 24–48 hour fast-tracked resolution SLAs. |
-| **Opaque Status Tracking**: Citizens receive little to no feedback, resulting in repetitive follow-ups and public frustration. | **Live Transparent Tracking**: Public ticket timeline with AI triage breakdown, SLA countdown timers, and official administrative remarks. |
-
----
-
-### 14.4 Final Verdict
-
-The Municipal Grievance Redressal System demonstrates that artificial intelligence in the public sector should not aim to replace human administrators, but rather empower municipal infrastructure to become **faster, fairer, and radically more accessible**. By bridging the profound communication divide between diverse multilingual citizens and local urban local bodies, MGRS establishes a scalable, production-ready blueprint for the future of intelligent civic governance and Citizen-to-Government (C2G) technology in modern India.
+In summary, MGRS bridges the gap between citizens and municipal authorities by making complaint filing simple, fast, and transparent. It shows how AI can be practically combined with standard web technologies and human oversight to solve real civic administration challenges.

@@ -493,17 +493,155 @@ While the neural classifier achieves **~86%–94% accuracy**, real-world governa
 
 ---
 
-## 11. Multi-Language Test Suite (Demo Test Cases)
+## 11. Multi-Language Test Suite & Real-World Examples (from README.md)
 
-The following 5 standard test cases demonstrate the end-to-end triage capabilities across diverse languages and urgency levels:
+To demonstrate the full automated triage pipeline across varied scripts, linguistic nuances, and urgency tiers, the following production test cases from the project's documentation illustrate how grievances are ingested, translated, classified, and resolved:
 
-| # | Language | Input Complaint Text | Expected Translation | Predicted Category | Urgency | SLA |
-| :-: | :--- | :--- | :--- | :--- | :-: | :-: |
-| **1** | **Hindi (`hi`)** | कचरा तीन दिनों से नहीं उठाया गया है और बदबू आ रही है | *"Garbage has not been collected for three days and it is smelling"* | **Sanitation** | `MEDIUM` | ~5 Days |
-| **2** | **Tamil (`ta`)** | எங்கள் தெருவில் மின் விளக்குகள் எரியவில்லை, இரவில் மிகவும் இருட்டாக உள்ளது | *"Street lights in our street are not working, it is very dark at night"* | **Street Lighting** | `LOW` | ~14 Days |
-| **3** | **Bengali (`bn`)** *(Hazard)* | প্রধান রাস্তায় বড় গর্তের কারণে दुर्घटना ঘটছে, অবিলম্বে মেরামত প্রয়োজন | *"Accidents are happening due to a big pothole on the main road, immediate repair is needed"* | **Roads & Maintenance** | `HIGH` *(Escalated due to accident keywords)* | ~3 Days |
-| **4** | **Kannada (`kn`)** *(Crisis)* | ಕಳೆದ ಮೂರು ದಿನಗಳಿಂದ ನಮ್ಮ ಬಡಾವಣೆಯಲ್ಲಿ ಕುಡಿಯುವ ನೀರು ಸರಬರಾಜು ಆಗುತ್ತಿಲ್ಲ | *"Drinking water is not being supplied in our locality for the past three days"* | **Water Supply** | `HIGH` *(Escalated due to water supply stoppage)* | ~1 Day |
-| **5** | **Hinglish (`en`/`hi`)** | humare yha pe 10 din se panni nhi ara hai | *"We haven't had water supply here for 10 days"* | **Water Supply** | `HIGH` *(Escalated via Hinglish normalizer & guardrail)* | ~1 Day |
+### 11.1 Comprehensive Test Suite Summary Table
+
+| # | Language | Input Complaint Text | Expected Translation | Predicted Category | Auto-Assigned Department | Urgency | SLA |
+| :-: | :--- | :--- | :--- | :--- | :--- | :---: | :---: |
+| **1** | **Hindi (`hi`)** | कचरा तीन दिनों से नहीं उठाया गया है और बदबू आ रही है | *"Garbage has not been collected for three days and it is smelling"* | **Sanitation** | Sanitation Department | `MEDIUM` | ~5 Days |
+| **2** | **Tamil (`ta`)** | எங்கள் தெருவில் மின் விளக்குகள் எரியவில்லை, இரவில் மிகவும் இருட்டாக உள்ளது | *"Street lights in our street are not working, it is very dark at night"* | **Street Lighting** | Street Lighting Department | `LOW` | ~14 Days |
+| **3** | **Bengali (`bn`)** *(Hazard)* | প্রধান রাস্তায় বড় গর্তের কারণে दुर्घटना ঘটছে, অবিলম্বে মেরামত প্রয়োজন | *"Accidents are happening due to a big pothole on the main road, immediate repair is needed"* | **Roads & Maintenance** | Roads & Infrastructure | `HIGH` *(Hazard Escalation)* | ~3 Days |
+| **4** | **Kannada (`kn`)** *(Crisis)* | ಕಳೆದ ಮೂರು ದಿನಗಳಿಂದ ನಮ್ಮ ಬಡಾವಣೆಯಲ್ಲಿ ಕುಡಿಯುವ ನೀರು ಸರಬರಾಜು ಆಗುತ್ತಿಲ್ಲ | *"Drinking water is not being supplied in our locality for the past three days"* | **Water Supply** | Water Supply Department | `HIGH` *(Essential Need)* | ~1 Day |
+| **5** | **Marathi (`mr`)** | सार्वजनिक उद्यानातील खेळणी तुटलेली आहेत आणि कचऱ्याचे साम्राज्य आहे | *"Play equipment in the public park is broken and there is garbage everywhere"* | **Parks & Recreation** | Parks & Recreation | `LOW` | ~15 Days |
+| **6** | **Hinglish (`hin`)** *(Colloquial)* | humare yha pe 10 din se panni nhi ara hai | *"We haven't had water supply here for 10 days"* | **Water Supply** | Water Supply Department | `HIGH` *(Keyword Normalization)* | ~1 Day |
+
+---
+
+### 11.2 Detailed Step-by-Step Test Case Walkthroughs
+
+#### Test Case 1: Hindi (Sanitation & Waste Management)
+* **Citizen Input Language**: Hindi (`hi`)
+* **Raw Grievance Submission**:
+  ```text
+  कचरा तीन दिनों से नहीं उठाया गया है और बदबू आ रही है
+  ```
+* **Detection & Translation**:
+  - Detected Script: Devanagari (`0x0900-0x097F`) $\rightarrow$ Confirmed language: `hi`
+  - AI Translation: *"Garbage has not been collected for three days and it is smelling"*
+* **Model Triage & Prediction**:
+  - Predicted Category: `Sanitation` (Confidence: ~94.2%)
+  - Urgency Assessment: `MEDIUM` (Persistent hygiene nuisance over multiple days)
+  - Auto-Assigned Department: **Sanitation Department** (`SANITATION`)
+  - Resolution SLA: **~5 Days**
+
+---
+
+#### Test Case 2: Tamil (Street Lighting Infrastructure)
+* **Citizen Input Language**: Tamil (`ta`)
+* **Raw Grievance Submission**:
+  ```text
+  எங்கள் தெருவில் மின் விளக்குகள் எரியவில்லை, இரவில் மிகவும் இருட்டாக உள்ளது
+  ```
+* **Detection & Translation**:
+  - Detected Script: Tamil (`0x0B80-0x0BFF`) $\rightarrow$ Confirmed language: `ta`
+  - AI Translation: *"Street lights in our street are not working, it is very dark at night"*
+* **Model Triage & Prediction**:
+  - Predicted Category: `Street Lighting` (Confidence: ~91.5%)
+  - Urgency Assessment: `LOW` (Standard municipal maintenance, no live wire hazards)
+  - Auto-Assigned Department: **Street Lighting Department** (`LIGHTING`)
+  - Resolution SLA: **~14 Days**
+
+---
+
+#### Test Case 3: Bengali (Roads & Maintenance — High Hazard Emergency)
+* **Citizen Input Language**: Bengali (`bn`)
+* **Raw Grievance Submission**:
+  ```text
+  প্রধান রাস্তায় বড় গর্তের কারণে दुर्घटना ঘটছে, অবিলম্বে মেরামত প্রয়োজন
+  ```
+* **Detection & Translation**:
+  - Detected Script: Bengali (`0x0980-0x09FF`) $\rightarrow$ Confirmed language: `bn`
+  - AI Translation: *"Accidents are happening due to a big pothole on the main road, immediate repair is needed"*
+* **Model Triage & Urgency Escalation**:
+  - Predicted Category: `Roads & Maintenance` (Confidence: ~93.8%)
+  - Urgency Assessment: **`HIGH`**
+  - **Escalation Rationale**: Although potholes typically register as `MEDIUM`, the safety rule engine detects emergency collision tokens (*"durghatna"* / *"accident"*), triggering automatic safety escalation.
+  - Auto-Assigned Department: **Roads & Infrastructure** (`ROADS`)
+  - Resolution SLA: **~3 Days** *(Fast-tracked from standard 7 days)*
+
+---
+
+#### Test Case 4: Kannada (Water Supply — Severe Civic Disruption)
+* **Citizen Input Language**: Kannada (`kn`)
+* **Raw Grievance Submission**:
+  ```text
+  ಕಳೆದ ಮೂರು ದಿನಗಳಿಂದ ನಮ್ಮ ಬಡಾವಣೆಯಲ್ಲಿ ಕುಡಿಯುವ ನೀರು ಸರಬರಾಜು ಆಗುತ್ತಿಲ್ಲ
+  ```
+* **Detection & Translation**:
+  - Detected Script: Kannada (`0x0C80-0x0CFF`) $\rightarrow$ Confirmed language: `kn`
+  - AI Translation: *"Drinking water is not being supplied in our locality for the past three days"*
+* **Model Triage & Prediction**:
+  - Predicted Category: `Water Supply` (Confidence: ~96.1%)
+  - Urgency Assessment: **`HIGH`**
+  - **Escalation Rationale**: Water outage exceeding 48 hours is recognized by `HIGH_KEYWORDS` as a critical municipal emergency.
+  - Auto-Assigned Department: **Water Supply Department** (`WATER`)
+  - Resolution SLA: **~1 Day**
+
+---
+
+#### Test Case 5: Marathi (Parks & Recreation)
+* **Citizen Input Language**: Marathi (`mr`)
+* **Raw Grievance Submission**:
+  ```text
+  सार्वजनिक उद्यानातील खेळणी तुटलेली आहेत आणि कचऱ्याचे साम्राज्य आहे
+  ```
+* **Detection & Translation**:
+  - Detected Script: Devanagari (`0x0900-0x097F`) $\rightarrow$ Disambiguated via user hint / n-gram to: `mr`
+  - AI Translation: *"Play equipment in the public park is broken and there is garbage everywhere"*
+* **Model Triage & Prediction**:
+  - Predicted Category: `Parks & Recreation` (Confidence: ~88.4%)
+  - Urgency Assessment: `LOW` (Cosmetic/recreational repair)
+  - Auto-Assigned Department: **Parks & Recreation** (`PARKS`)
+  - Resolution SLA: **~15 Days**
+
+---
+
+#### Test Case 6: Hinglish (Conversational Romanized Hindi)
+* **Citizen Input Language**: Hinglish / Latin script (`en` selection with Hindi phonetic words)
+* **Raw Grievance Submission**:
+  ```text
+  humare yha pe 10 din se panni nhi ara hai
+  ```
+* **Detection, Normalization & Translation**:
+  - Script Check: Latin (`isascii() == True`)
+  - Hinglish Detector: Matches *humare*, *yha*, *panni*, *nhi*, *ara* $\rightarrow$ Triggers Hinglish Pipeline.
+  - Text Normalization: Rewrites colloquial tokens (*panni* $\rightarrow$ *paani (tap water supply)*, *yha* $\rightarrow$ *yahan*, *nhi* $\rightarrow$ *nahi*, *ara* $\rightarrow$ *aa raha*).
+  - AI Translation: *"We haven't had water supply here for 10 days"* (Municipal safeguard prevents mistranslating *"panni"* as weather *"rain"*).
+* **Model Triage & Safety Protection**:
+  - Predicted Category: `Water Supply` (Enforced via `rule_category()` safeguard).
+  - Urgency Assessment: **`HIGH`** (Prolonged outage escalation).
+  - Auto-Assigned Department: **Water Supply Department** (`WATER`)
+  - Resolution SLA: **~1 Day**
+
+---
+
+### 11.3 End-to-End JSON Payload Example (Wire Format)
+
+#### 1. Backend $\rightarrow$ AI Service Request (`POST http://ai-service:8000/predict`):
+```json
+{
+  "text": "कचरा तीन दिनों से नहीं उठाया गया है और बदबू आ रही है",
+  "language": "hi"
+}
+```
+
+#### 2. AI Service $\rightarrow$ Backend Response:
+```json
+{
+  "category": "Sanitation",
+  "department": "Sanitation Department",
+  "urgency": "MEDIUM",
+  "confidence": 0.9421,
+  "translated_text": "Garbage has not been collected for three days and it is smelling",
+  "detected_language": "hi",
+  "estimated_resolution_days": 5,
+  "model_version": "mgrs-indicbertv2-v1",
+  "ai_pending": false
+}
+```
 
 ---
 

@@ -347,3 +347,4 @@ class MGRSPredictor:
             "model_version": self.version,
             "ai_pending": False,
         }
+

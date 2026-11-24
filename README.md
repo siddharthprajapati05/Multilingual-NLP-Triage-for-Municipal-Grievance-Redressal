@@ -88,70 +88,86 @@ A full-stack municipal grievance redressal web application powered by an integra
 
 ### Method A: Local Development (Terminal by Terminal)
 
-#### 1. Setup PostgreSQL Database
-Make sure PostgreSQL is running on your machine:
-```bash
-# Create user and database (if not already created)
-psql postgres -c "CREATE USER mgrs_user WITH PASSWORD 'mgrs_password' CREATEDB;"
-psql postgres -c "CREATE DATABASE mgrs_db OWNER mgrs_user;"
-```
-
 ---
 
-#### 2. Terminal 1 — Start the AI Service (Port 8000)
+#### 🔄 Whenever You Restart (Quick Run)
+
+Make sure **Docker Desktop** is open, then open 3 terminal tabs:
+
+##### 0. Database (Docker Desktop)
+Ensure the PostgreSQL container is started:
+```bash
+docker start mgrs-postgres
+```
+
+##### 1. Terminal 1 — Start the AI Service (Port 8000)
 ```bash
 cd ai-service
-
-# Create virtual environment (first time only)
-python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies (first time only)
-pip install -r requirements.txt
-
-# Start the AI service
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 > Verify AI service: Visit **http://localhost:8000/health** — should return:  
 > `{"status":"ok","model_loaded":true,"model_version":"mgrs-indicbertv2-v1"}`
 
----
-
-#### 3. Terminal 2 — Start the Backend (Port 5000)
+##### 2. Terminal 2 — Start the Backend (Port 5000)
 ```bash
 cd backend
-
-# Copy environment variables (first time only)
-cp .env.example .env
-
-# Install dependencies
-npm install
-
-# Run database migrations & generate Prisma client
-npx prisma migrate deploy
-npx prisma generate
-
-# Seed initial departments & sample citizen (first time only)
-npx ts-node prisma/seed.ts
-
-# Start the Express server
 npm run dev
 ```
-> Backend runs at **http://localhost:5000** and connects to AI service at `http://localhost:8000`.
+> Backend runs at **http://localhost:5000**.
 
----
-
-#### 4. Terminal 3 — Start the Frontend (Port 3000)
+##### 3. Terminal 3 — Start the Frontend (Port 3000)
 ```bash
 cd frontend
-
-# Install dependencies
-npm install
-
-# Start Vite dev server
 npm run dev
 ```
 > Open your browser and navigate to **http://localhost:3000**.
+
+---
+
+#### ⚙️ First-Time Setup (Run Once Only)
+
+Follow these steps if you are setting up the project on a new machine for the first time:
+
+##### Step 1: Start PostgreSQL Database
+```bash
+# Start PostgreSQL container via Docker
+docker run -d --name mgrs-postgres \
+  -e POSTGRES_USER=mgrs_user \
+  -e POSTGRES_PASSWORD=mgrs_password \
+  -e POSTGRES_DB=mgrs_db \
+  -p 5432:5432 \
+  --restart unless-stopped \
+  postgres:16-alpine
+```
+
+##### Step 2: Setup AI Service (Terminal 1)
+```bash
+cd ai-service
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+##### Step 3: Setup Backend API (Terminal 2)
+```bash
+cd backend
+cp .env.example .env
+# Set ADMIN_PASSWORD_HASH in .env with a valid bcrypt hash
+npm install
+npx prisma migrate deploy
+npx prisma generate
+npx ts-node prisma/seed.ts
+npm run dev
+```
+
+##### Step 4: Setup Frontend (Terminal 3)
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 

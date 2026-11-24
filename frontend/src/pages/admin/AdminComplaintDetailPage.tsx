@@ -240,21 +240,19 @@ const AdminComplaintDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {complaint.language !== 'en' && (
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Sparkles size={13} className="text-primary-700" />
-                    <span className="text-xs font-semibold text-primary-800 uppercase tracking-wider">
-                      English Translation (AI Model)
-                    </span>
-                  </div>
-                  <div className="bg-primary-50/50 p-3.5 rounded-xl border border-primary-200">
-                    <p className="text-gray-800 leading-relaxed italic">
-                      {complaint.translatedText ? `"${complaint.translatedText}"` : 'Translation in progress...'}
-                    </p>
-                  </div>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Sparkles size={13} className="text-primary-700" />
+                  <span className="text-xs font-semibold text-primary-800 uppercase tracking-wider">
+                    English Translation (AI Model)
+                  </span>
                 </div>
-              )}
+                <div className="bg-primary-50/50 p-3.5 rounded-xl border border-primary-200">
+                  <p className="text-gray-800 leading-relaxed italic">
+                    {`"${complaint.translatedText || complaint.originalText}"`}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {complaint.photoUrl && (
@@ -340,12 +338,10 @@ const AdminComplaintDetailPage: React.FC = () => {
                   <div><span className="text-gray-500">Urgency:</span><br/><span className="font-semibold">{complaint.aiUrgency}</span></div>
                   <div><span className="text-gray-500">Est. Resolution:</span><br/><span className="font-semibold">{complaint.estimatedDays ? `~${complaint.estimatedDays} days` : '—'}</span></div>
                 </div>
-                {complaint.translatedText && complaint.language !== 'en' && (
-                  <div className="mt-3 pt-3 border-t border-green-200">
-                    <p className="text-xs text-gray-500 mb-1">English Translation</p>
-                    <p className="text-sm text-gray-700 italic">"{complaint.translatedText}"</p>
-                  </div>
-                )}
+                <div className="mt-3 pt-3 border-t border-green-200">
+                  <p className="text-xs text-gray-500 mb-1">English Translation</p>
+                  <p className="text-sm text-gray-700 italic">"{complaint.translatedText || complaint.originalText}"</p>
+                </div>
                 {complaint.aiConfidence && (
                   <p className="text-xs text-gray-400 mt-2">Confidence: {(complaint.aiConfidence * 100).toFixed(1)}%</p>
                 )}

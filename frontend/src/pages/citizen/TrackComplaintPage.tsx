@@ -147,21 +147,19 @@ const TrackComplaintPage: React.FC = () => {
               </div>
             </div>
 
-            {complaint.language !== 'en' && (
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Sparkles size={13} className="text-primary-700" />
-                  <span className="text-xs font-semibold text-primary-800 uppercase tracking-wider">
-                    English Translation (AI Model)
-                  </span>
-                </div>
-                <div className="bg-primary-50/50 p-3.5 rounded-xl border border-primary-200">
-                  <p className="text-gray-800 leading-relaxed italic">
-                    {complaint.translatedText ? `"${complaint.translatedText}"` : 'Translation in progress...'}
-                  </p>
-                </div>
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Sparkles size={13} className="text-primary-700" />
+                <span className="text-xs font-semibold text-primary-800 uppercase tracking-wider">
+                  English Translation (AI Model)
+                </span>
               </div>
-            )}
+              <div className="bg-primary-50/50 p-3.5 rounded-xl border border-primary-200">
+                <p className="text-gray-800 leading-relaxed italic">
+                  {`"${complaint.translatedText || complaint.originalText}"`}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Details Grid */}

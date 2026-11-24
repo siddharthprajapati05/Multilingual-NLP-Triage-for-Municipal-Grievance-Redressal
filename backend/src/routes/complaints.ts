@@ -83,7 +83,7 @@ router.post(
           aiUrgency: aiResult.urgency || null,
           aiConfidence: aiResult.confidence || null,
           aiProcessed: !!aiResult.category,
-          translatedText: aiResult.translatedText || null,
+          translatedText: aiResult.translatedText || (language === 'en' ? text : null),
           estimatedDays: aiResult.estimatedResolutionDays || null,
           detectedLang: aiResult.detectedLanguage || null,
           status: ComplaintStatus.PENDING,

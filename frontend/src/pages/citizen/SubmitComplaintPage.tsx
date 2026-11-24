@@ -108,7 +108,7 @@ const SubmitComplaintPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              {aiResult.translatedText && aiResult.detectedLang && aiResult.detectedLang !== 'en' && (
+              {aiResult.translatedText && (
                 <div className="mt-2 pt-2 border-t border-green-200">
                   <p className="text-[10px] text-gray-500 mb-0.5">English translation</p>
                   <p className="text-xs text-gray-700 italic">"{aiResult.translatedText}"</p>

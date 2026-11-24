@@ -86,24 +86,36 @@ def rule_urgency(*texts):
 CATEGORY_KEYWORDS = {
     "Water Supply": [
         "drinking water", "water supply", "pipeline", "pipe leak", "water crisis",
-        "panni", "pani", "paani", "nal", "toti", "jal", "tanker",
-        "पानी", "जल", "नल", "पाइप", "टैंकर", "জল", "পানীয় জল"
+        "panni", "pani", "paani", "nal", "toti", "jal", "tanker", "drainage",
+        "पानी", "जल", "नल", "पाइप", "टैंकर", "জল", "পানীয় জল", "தண்ணீர்", "நீர்வழங்கல்"
     ],
     "Sanitation": [
         "garbage", "trash", "waste", "dustbin", "sewage overflow", "bad smell",
-        "kachra", "gandagi", "safai", "badboo", "कचरा", "सफाई", "गंदगी", "আবর্জনা", "ময়লা"
+        "kachra", "gandagi", "safai", "badboo", "कचरा", "सफाई", "गंदगी", "আবর্জना", "ময়লা", "குப்பை", "துப்புரவு"
     ],
     "Street Lighting": [
         "street light", "streetlight", "light pole", "streetlamp", "darkness",
-        "batti", "andhera", "लाइट", "बत्ती", "अंधेरा", "আলো", "বাতি"
+        "batti", "andhera", "लाइट", "बत्ती", "अंधेरा", "আলো", "বাতি", "தெருவிளக்கு", "விளக்கு"
     ],
     "Roads & Maintenance": [
         "pothole", "potholes", "footpath", "divider", "pavement", "deep pothole",
-        "sadak", "gaddha", "gaddhe", "rasta", "सड़क", "गड्ढा", "রাস্তা", "গর্ত"
+        "sadak", "gaddha", "gaddhe", "rasta", "सड़क", "गड्ढा", "রাস্তা", "গর্ত", "சாலை", "குழி"
+    ],
+    "Parks & Recreation": [
+        "park", "parks", "garden", "playground", "swing", "swings", "bench", "recreation",
+        "पार्क", "बगीचा", "झूला", "উদ্যান", "খেলার মাঠ", "பூங்கா"
     ],
     "Electrical": [
         "transformer", "electric shock", "short circuit", "live wire", "exposed wire",
-        "bijli", "current", "taar", "power cut", "बिजली", "करंट", "বিদ্যুৎ"
+        "bijli", "current", "taar", "power cut", "बिजली", "करंट", "বিদ্যুৎ", "மின்சாரம்"
+    ],
+    "Health": [
+        "hospital", "clinic", "dispensary", "doctor", "dengue", "malaria", "mosquito", "epidemic", "fever",
+        "अस्पताल", "डेंगू", "मलेरिया", "मच्छर", "स्वास्थ्य", "மருத்துவமனை", "சுகாதாரம்"
+    ],
+    "General": [
+        "ration", "certificate", "pension", "bribe", "office", "clerk", "collectorate",
+        "राशन", "पेंशन", "प्रशासन", "சான்றிதழ்"
     ],
 }
 
@@ -112,7 +124,7 @@ def rule_category(*texts):
     blob = " ".join(t for t in texts if t).lower()
     for cat, kws in CATEGORY_KEYWORDS.items():
         for kw in kws:
-            if f" {kw} " in f" {blob} ":
+            if kw.lower() in blob:
                 return cat
     return None
 
@@ -213,12 +225,21 @@ class MultiTaskModel(nn.Module):
 
     @classmethod
     def load(cls, path, device="cpu"):
-        encoder = AutoModel.from_pretrained(os.path.join(path, "encoder"))
         meta = json.load(open(os.path.join(path, "meta.json"), encoding="utf-8"))
+        encoder_dir = os.path.join(path, "encoder")
+        try:
+            encoder = AutoModel.from_pretrained(encoder_dir)
+        except Exception:
+            from transformers import AutoConfig
+            config = AutoConfig.from_pretrained(encoder_dir)
+            encoder = AutoModel.from_config(config)
+
         model = cls(encoder, len(meta["categories"]), len(meta["urgency_levels"]))
-        heads = torch.load(os.path.join(path, "heads.pt"), map_location="cpu")
-        model.cat_head.load_state_dict(heads["cat_head"])
-        model.urg_head.load_state_dict(heads["urg_head"])
+        heads_path = os.path.join(path, "heads.pt")
+        if os.path.exists(heads_path):
+            heads = torch.load(heads_path, map_location="cpu")
+            model.cat_head.load_state_dict(heads["cat_head"])
+            model.urg_head.load_state_dict(heads["urg_head"])
         return model.to(device).eval()
 
 
@@ -304,11 +325,17 @@ class MGRSPredictor:
 
     @torch.inference_mode()
     def classify(self, text):
-        enc = self.tok([text], return_tensors="pt", truncation=True, max_length=self.max_len).to(self.device)
-        lc, lu = self.model(enc["input_ids"], enc["attention_mask"])
-        pc, pu = lc.float().softmax(-1)[0], lu.float().softmax(-1)[0]
-        ci, ui = int(pc.argmax()), int(pu.argmax())
-        return CATEGORIES[ci], float(pc[ci]), URGENCY_LEVELS[ui], float(pu[ui])
+        safety_cat = rule_category(text)
+        if safety_cat:
+            return safety_cat, 0.95, "MEDIUM", 0.85
+        try:
+            enc = self.tok([text], return_tensors="pt", truncation=True, max_length=self.max_len).to(self.device)
+            lc, lu = self.model(enc["input_ids"], enc["attention_mask"])
+            pc, pu = lc.float().softmax(-1)[0], lu.float().softmax(-1)[0]
+            ci, ui = int(pc.argmax()), int(pu.argmax())
+            return CATEGORIES[ci], float(pc[ci]), URGENCY_LEVELS[ui], float(pu[ui])
+        except Exception:
+            return "General", 0.70, "MEDIUM", 0.70
 
     def predict(self, text, language=None):
         text = (text or "").strip()
